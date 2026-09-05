@@ -1,7 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PageController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+/*
+* Web Routes
+*
+* Seluruh rute didelegasikan ke PageController sesuai ketentuan tugas.
+*
+*/
+
+Route::get('/', [PageController::class, 'index'])->name('home');
+Route::get('/about', [PageController::class, 'about'])->name('about');
+Route::get('/project-idea', [PageController::class, 'project'])->name('project');
