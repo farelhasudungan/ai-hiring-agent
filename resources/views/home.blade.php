@@ -85,8 +85,8 @@
                 </div>
 
                 <div class="space-y-1 mb-2">
-                    <h3 class="text-base font-bold text-zinc-900 dark:text-white group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors">Anggota 2</h3>
-                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">NRP: -</p>
+                    <h3 class="text-base font-bold text-zinc-900 dark:text-white group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors">Muhammad Nabil Fauzan</h3>
+                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">NRP: 5025241024</p>
                 </div>
             </div>
 
@@ -104,8 +104,8 @@
                 </div>
 
                 <div class="space-y-1 mb-2">
-                    <h3 class="text-base font-bold text-zinc-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">Anggota 3</h3>
-                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">NRP: -</p>
+                    <h3 class="text-base font-bold text-zinc-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">Athar Bakhtiar Aziz</h3>
+                    <p class="text-xs font-mono text-zinc-500 dark:text-zinc-400">NRP: 5025241136</p>
                 </div>
             </div>
 
