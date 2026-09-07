@@ -43,4 +43,28 @@ class PageController extends Controller
     {
         return view('project');
     }
+
+    /**
+     * Menghitung dua angka berdasarkan operasi yang diberikan.
+     * Rute: GET /hitung/{angka1}/{angka2}/{operasi}
+     *
+     * @return \Illuminate\View\View
+     */
+    public function hitung($angka1, $angka2, string $operasi)
+    {
+        $hasil = match ($operasi) {
+            'tambah' => $angka1 + $angka2,
+            'kurang' => $angka1 - $angka2,
+            'kali' => $angka1 * $angka2,
+            'bagi' => $angka2 == 0 ? abort(400, 'Pembagian dengan nol tidak diperbolehkan.') : $angka1 / $angka2,
+            default => abort(404, 'Operasi tidak ditemukan.'),
+        };
+
+        return view('hitung', [
+            'angka1' => $angka1,
+            'angka2' => $angka2,
+            'operasi' => $operasi,
+            'hasil' => $hasil,
+        ]);
+    }
 }
