@@ -1,26 +1,18 @@
 @extends('layouts.app')
-
 @section('title', 'Kalkulator Dinamis')
-
 @section('content')
-<div class="relative">
-    <section class="mx-auto max-w-5xl px-6 pt-12 pb-8 sm:pt-16">
-        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 font-mono text-xs font-medium text-blue-600 dark:text-blue-400">
-            <span class="relative flex size-2">
-                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                <span class="relative inline-flex size-2 rounded-full bg-blue-500"></span>
-            </span>
-            <span>Kalkulator Dinamis</span>
-        </div>
-
-        <h1 class="text-4xl font-semibold leading-[1.08] tracking-tight text-zinc-900 dark:text-white sm:text-5xl font-display">
-            Hasil <span class="gradient-text font-bold">Perhitungan</span>
-        </h1>
-
-        <p class="mt-5 max-w-2xl text-base leading-relaxed text-zinc-600 dark:text-zinc-400 sm:text-lg">
-            Hasil dari {{ $angka1 }} {{ $operasi }} {{ $angka2 }} adalah
-            <span class="font-semibold text-blue-600 dark:text-blue-400">{{ $hasil }}</span>
-        </p>
-    </section>
-</div>
+<section class="page-width py-16 md:py-24">
+    <p class="eyebrow mb-6">SANDBOX / KALKULATOR DINAMIS</p>
+    <h1 class="hero-title">Hasil perhitungan.</h1>
+    <p class="mt-6 text-lg text-body">Dua angka, satu operasi. Dihitung langsung melalui route Laravel.</p>
+    <div class="mt-12 max-w-3xl overflow-hidden rounded-[4px] border border-hairline bg-surface">
+        <div class="terminal-bar"><span>calculator / output</span><span>selesai</span></div>
+        <div class="p-6 md:p-8"><p class="break-all font-mono text-sm text-muted">$ hitung {{ $angka1 }} {{ $angka2 }} {{ $operasi }}</p><p class="mt-8 text-body">Hasil dari {{ $angka1 }} {{ $operasi }} {{ $angka2 }} adalah</p><p class="mt-4 break-all font-mono text-5xl leading-tight">{{ $hasil }}</p></div>
+    </div>
+    <div class="mt-8 flex flex-wrap gap-3">
+        @foreach (['tambah', 'kurang', 'kali', 'bagi'] as $operation)
+            <a class="button-ghost border border-hairline" href="{{ route('hitung', ['angka1' => 10, 'angka2' => 5, 'operasi' => $operation]) }}">10 {{ $operation }} 5 <span aria-hidden="true">↗</span></a>
+        @endforeach
+    </div>
+</section>
 @endsection
