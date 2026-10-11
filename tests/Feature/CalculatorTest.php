@@ -7,22 +7,10 @@ use Tests\TestCase;
 class CalculatorTest extends TestCase
 {
     /**
-     * Memastikan kalkulator menghitung dan menampilkan seluruh operasi.
+     * Kalkulator tidak lagi menjadi bagian website proyek.
      */
-    public function test_dynamic_calculator_returns_the_calculation_result(): void
+    public function test_calculator_route_is_no_longer_available(): void
     {
-        $cases = [
-            ['10', '5', 'tambah', '15'],
-            ['10', '5', 'kurang', '5'],
-            ['10', '5', 'kali', '50'],
-            ['10', '5', 'bagi', '2'],
-        ];
-
-        foreach ($cases as [$angka1, $angka2, $operasi, $hasil]) {
-            $this->get("/hitung/{$angka1}/{$angka2}/{$operasi}")
-                ->assertOk()
-                ->assertSee("Hasil dari {$angka1} {$operasi} {$angka2} adalah")
-                ->assertSee($hasil);
-        }
+        $this->get('/hitung/10/5/tambah')->assertNotFound();
     }
 }

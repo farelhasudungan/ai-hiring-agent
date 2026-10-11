@@ -14,9 +14,19 @@
 
 @layer base {
     html { color-scheme: dark; }
+    [id] { scroll-margin-top: 7rem; }
+    html[data-theme="light"] {
+        color-scheme: light;
+        --color-canvas: #f7f5f0;
+        --color-surface: #eeeae2;
+        --color-hairline: #d8d1c7;
+        --color-ink: #2b2622;
+        --color-body: #595147;
+        --color-muted: #6e655b;
+    }
     body { @apply bg-canvas font-sans text-ink antialiased; }
     ::selection { @apply bg-ink text-canvas; }
-    :focus-visible { outline: 2px solid #f7f5f0; outline-offset: 4px; }
+    :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 4px; }
 }
 
 @layer components {
@@ -28,4 +38,17 @@
     .button-primary { @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-[3px] bg-ink px-4 py-2 text-sm font-medium text-canvas transition-colors hover:bg-body md:min-h-9; }
     .button-ghost { @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-[3px] px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface md:min-h-9; }
     .terminal-bar { @apply flex items-center justify-between gap-4 border-b border-hairline px-4 py-3 font-mono text-xs text-muted; }
+    .theme-icon-dark { display: none; }
+    .product-preview { @apply overflow-hidden rounded-[4px] border border-hairline bg-surface; }
+    .preview-badge { @apply rounded-[3px] border border-hairline px-2 py-1 text-[10px]; }
+    .candidate-row { @apply flex w-full items-center gap-3 rounded-[3px] border border-transparent p-3 text-left transition-colors hover:bg-canvas; }
+    .candidate-row.is-selected { @apply border-hairline bg-canvas; }
+    .candidate-avatar { @apply flex size-10 shrink-0 items-center justify-center rounded-[3px] border border-hairline font-mono text-xs; }
+    .feature-card { @apply rounded-[4px] border border-hairline p-7 transition-colors hover:bg-surface; }
+    .feature-icon { @apply flex size-11 items-center justify-center rounded-[3px] border border-hairline bg-surface text-2xl; }
+    .faq-item summary { list-style: none; }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item[open] .faq-plus { transform: rotate(45deg); }
+    html[data-theme="light"] .theme-icon-light { display: none; }
+    html[data-theme="light"] .theme-icon-dark { display: block; }
 }
