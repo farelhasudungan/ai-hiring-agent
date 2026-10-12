@@ -14,6 +14,17 @@ Perintah interaktif meminta nama, email, role `admin`/`hr`, dan password beserta
 
 Migration menambahkan `role` nullable dan `is_active` default false. Akun lama tidak otomatis memperoleh akses panel. `User::canAccessPanel()` membatasi akses pada admin/HR aktif, termasuk request dari sesi yang sudah login. Field role dan status aktif tidak mass-assignable lewat profil.
 
+## Seeder akun
+
+Sebagai alternatif perintah interaktif, isi `SEED_ADMIN_PASSWORD` dan/atau `SEED_HR_PASSWORD` pada `.env` (minimal 12 karakter). Nama dan email dapat diatur melalui `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL`, `SEED_HR_NAME`, dan `SEED_HR_EMAIL`; lihat `.env.example`.
+
+```bash
+php artisan config:clear
+php artisan db:seed
+```
+
+`DatabaseSeeder` memanggil `StaffUserSeeder` untuk membuat akun aktif dengan role yang sesuai. Akun tanpa konfigurasi password dilewati. Seeder tidak mengganti password, role, atau status akun dengan email yang sudah ada. Login menggunakan email dan password yang Anda tentukan di `.env`.
+
 ## Reset password
 
 Gunakan tautan lupa password di halaman login. Konfigurasikan `APP_URL` agar URL reset mengarah ke host aplikasi yang benar. Dengan `MAIL_MAILER=log`, pesan reset masuk ke `storage/logs/laravel.log`; gunakan Mailpit/SMTP atau mail provider untuk pengiriman nyata. Notifikasi reset Filament menggunakan queue, sehingga worker perlu berjalan (`php artisan queue:work` atau `composer run dev`).

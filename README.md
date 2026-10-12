@@ -44,6 +44,8 @@ php artisan app:create-staff
 
 Ikuti pertanyaan untuk mengisi nama, email, role `admin`/`hr`, dan password. Tidak ada akun atau password default.
 
+Alternatif: isi kredensial `SEED_ADMIN_*` dan/atau `SEED_HR_*` pada `.env`, lalu jalankan `php artisan db:seed`. Lihat [panduan seeder akun](docs/authentication.md#seeder-akun).
+
 ### 4. Jalankan aplikasi
 
 ```bash
