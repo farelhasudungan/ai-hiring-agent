@@ -2,7 +2,8 @@
 
 ## Current application
 
-- This is a single Laravel 12 app for **Recruiting and Hiring Agents**, not a monorepo. It currently provides a product landing page, an interactive candidate demo using illustrative data, and an About page. Recruitment workflows, Filament, AI integration, and selection emails are planned, not implemented.
+- This is a single Laravel 12 app for **Recruiting and Hiring Agents**, not a monorepo. It provides a product landing page, illustrative candidate demo, About page, and Filament 5 authentication panel. Recruitment workflows, AI integration, and selection emails are still planned.
+- The panel is configured in `app/Providers/Filament/AdminPanelProvider.php` at `/admin`, with built-in login, logout, password reset, and profile. `User::canAccessPanel()` requires an active admin/HR account. Run `php artisan app:create-staff` to create one interactively; see `docs/authentication.md`. Auth tests are in `tests/Feature/PanelAuthTest.php`.
 - `routes/web.php` maps `GET /` (named `home`) to `PageController::index()` and `GET /about` (named `about`) to `PageController::about()` in `app/Http/Controllers/PageController.php`.
 - `/` renders `resources/views/home.blade.php`; `/about` renders `resources/views/about.blade.php`. Both extend `resources/views/layouts/app.blade.php`. Keep view names aligned with their page purpose.
 - `/project-idea` is a permanent (301) redirect to `/`, not a separate page or named `project` route. The calculator route and the old `project.blade.php` and `hitung.blade.php` views have been removed. `tests/Feature/CalculatorTest.php` now checks that the calculator URL returns 404.
@@ -22,7 +23,7 @@
 - Use `PRD.md` as the development baseline: it contains P0/P1/P2 scope, requirements and acceptance criteria, data models, backlog B01–B20, and milestones. Its estimates and open decisions are planning assumptions; check the code and dependencies before treating a feature as available.
 - The planned MVP serves one organization with admin/HR accounts; candidates apply without accounts. Public job listings and application forms are future additions to the existing public pages.
 - For the planned internal panel, use **Filament's built-in authentication**. Do not add a separate Fortify/starter-kit auth stack just for the panel. Use Laravel Policies and panel access checks for authorization; Spatie Permission is optional for more complex future roles.
-- Before installing Filament, verify compatibility with Laravel 12, the project's PHP constraint (`^8.2`), Livewire, and Tailwind. Commit dependency lockfiles when dependencies change.
+- Filament 5 and Livewire 4 are installed. Composer resolves against PHP 8.2 via `config.platform`; maintain compatibility when changing dependencies. The Composer `filament:upgrade` hook publishes panel assets, which are gitignored. Commit dependency lockfiles when dependencies change.
 - Keep `PageController` for static pages. Put recruitment features in dedicated controllers, request validators, domain actions/services, and Filament resources; share business rules between public endpoints and panel actions.
 - Use `job_postings` for recruitment vacancies: the existing `jobs` table belongs to Laravel's database queue. PostgreSQL is planned for staging/production; SQLite remains the current default for local setup and tests.
 - Follow the PRD's async analysis and notification design: keep CVs private, validate structured AI output, separate analysis status from selection stage, and make retries/idempotency explicit. AI recommends; HR records final selection decisions.
