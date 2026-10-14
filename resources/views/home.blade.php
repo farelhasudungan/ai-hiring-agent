@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Roku — Dari kotak masuk ke shortlist')
+@section('title', 'Roku: Dari kotak masuk ke shortlist')
 
 @section('content')
     @include('partials.landing.hero')

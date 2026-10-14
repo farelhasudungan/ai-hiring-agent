@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->profile()
             ->brandName('Hiring Agents')
+            ->favicon(asset('favicon.ico'))
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => view('filament.auth.styles'), scopes: Login::class)
             ->renderHook(PanelsRenderHook::SIMPLE_LAYOUT_START, fn () => view('filament.auth.navigation'), scopes: Login::class)
             ->renderHook(PanelsRenderHook::SIMPLE_LAYOUT_END, fn () => view('filament.auth.footer'), scopes: Login::class)
