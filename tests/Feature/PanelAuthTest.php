@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\Auth\Login;
 use App\Models\User;
 use Filament\Auth\Notifications\ResetPassword;
-use Filament\Auth\Pages\Login;
 use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;

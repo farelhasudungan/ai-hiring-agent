@@ -1,0 +1,84 @@
+/* Auth-only palette from DESIGN.md, with the public site's warm light variant. */
+.hiring-login {
+    --auth-canvas: #f7f5f0;
+    --auth-surface: #eeeae2;
+    --auth-hairline: #d8d1c7;
+    --auth-ink: #2b2622;
+    --auth-body: #595147;
+    --auth-muted: #6e655b;
+    @apply bg-auth-canvas text-auth-ink;
+}
+
+.dark .hiring-login {
+    --auth-canvas: #2b2622;
+    --auth-surface: #383330;
+    --auth-hairline: #3f3a36;
+    --auth-ink: #f7f5f0;
+    --auth-body: #c9c0ad;
+    --auth-muted: #aea69c;
+}
+
+.hiring-login .fi-simple-layout { @apply min-h-svh; }
+.hiring-login .hiring-auth-nav {
+    @apply mx-auto flex w-full max-w-[1200px] items-center justify-between gap-4 px-6 py-4 text-sm;
+}
+.hiring-login .hiring-auth-home {
+    @apply inline-flex min-h-11 items-center gap-2.5 text-auth-body;
+}
+.hiring-login .hiring-auth-home:hover { @apply text-auth-ink; }
+.hiring-login .fi-theme-switcher { @apply rounded-[4px] bg-auth-surface; }
+.hiring-login .fi-theme-switcher-btn { @apply min-h-11 min-w-11 rounded-[3px]; }
+.hiring-login .fi-theme-switcher-btn .fi-icon { @apply text-auth-muted; }
+.hiring-login .fi-theme-switcher-btn.fi-active { @apply bg-auth-canvas shadow-none; }
+.hiring-login .fi-theme-switcher-btn.fi-active .fi-icon { @apply text-auth-ink; }
+.hiring-login .fi-simple-main-ctn { @apply px-6 py-12; }
+.hiring-login .fi-simple-main {
+    @apply w-full max-w-[440px] rounded-[6px] border border-solid border-auth-hairline bg-auth-surface p-8 shadow-none;
+}
+.hiring-login .fi-logo { @apply text-sm font-medium text-auth-muted; }
+.hiring-login .fi-simple-header-heading {
+    @apply text-[32px] leading-10 font-medium tracking-[-0.8px] text-auth-ink;
+}
+.hiring-login .fi-simple-header-subheading { @apply text-sm leading-5 text-auth-body; }
+.hiring-login .fi-fo-field-label-content { @apply font-medium text-auth-ink; }
+.hiring-login .fi-input-wrp {
+    @apply rounded-[3px] bg-auth-surface shadow-[0_0_0_1px_var(--auth-hairline)];
+}
+.hiring-login .fi-input-wrp:not(.fi-invalid):focus-within { @apply shadow-[0_0_0_2px_var(--auth-ink)]; }
+.hiring-login .fi-input-wrp.fi-invalid { @apply shadow-[0_0_0_1px_var(--danger-500)]; }
+.hiring-login .fi-input { @apply min-h-11 text-sm text-auth-ink; }
+.hiring-login .fi-input::placeholder { @apply text-auth-muted; }
+.hiring-login .fi-input-wrp .fi-icon-btn { @apply text-auth-muted; }
+.hiring-login .fi-checkbox-input {
+    @apply rounded-[3px] border-auth-muted bg-auth-canvas;
+}
+.hiring-login .fi-checkbox-input:checked { @apply border-auth-ink bg-auth-ink; }
+.dark .hiring-login .fi-checkbox-input:checked {
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%232b2622' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+}
+.hiring-login .fi-link { @apply text-sm font-medium text-auth-body; }
+.hiring-login .fi-link:hover { @apply text-auth-ink; }
+.hiring-login .fi-btn.fi-color-primary {
+    @apply min-h-11 rounded-[3px] bg-auth-ink text-sm font-medium text-auth-canvas shadow-none;
+}
+.hiring-login .fi-btn.fi-color-primary:hover { @apply bg-auth-body; }
+.hiring-login :is(a, button, input):focus-visible { @apply outline-2 outline-offset-4 outline-solid outline-auth-ink; }
+.hiring-login .hiring-auth-footer {
+    @apply px-6 pt-0 pb-8 text-center text-xs leading-5 text-auth-muted;
+}
+.hiring-login .hiring-auth-footer p + p { @apply mt-2; }
+@media (max-width: 479px) {
+    .hiring-login .hiring-auth-nav { @apply px-4; }
+    .hiring-login .fi-simple-main-ctn { @apply px-4 py-6; }
+    .hiring-login .fi-simple-main { @apply p-6; }
+}
+@reference "tailwindcss";
+
+@theme inline {
+    --color-auth-canvas: var(--auth-canvas);
+    --color-auth-surface: var(--auth-surface);
+    --color-auth-hairline: var(--auth-hairline);
+    --color-auth-ink: var(--auth-ink);
+    --color-auth-body: var(--auth-body);
+    --color-auth-muted: var(--auth-muted);
+}
