@@ -1,3 +1,5 @@
+import { initCandidateDemo, initScrollAnimations } from './landing';
+
 const themeToggle = document.querySelector('[data-theme-toggle]');
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
 let preferredTheme;
@@ -6,6 +8,8 @@ try { preferredTheme = localStorage.getItem('theme'); } catch {}
 
 const setTheme = (theme) => {
     document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#17191c' : '#ffffff');
+
     if (themeToggle) {
         themeToggle.setAttribute('aria-pressed', String(theme === 'dark'));
         themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Aktifkan light mode' : 'Aktifkan dark mode');
@@ -28,23 +32,6 @@ systemTheme.addEventListener('change', (event) => {
 });
 
 const menuToggle = document.querySelector('[data-menu-toggle]');
-const candidateDemo = document.querySelector('[data-candidate-demo]');
-
-if (candidateDemo) {
-    const candidates = candidateDemo.querySelectorAll('[data-candidate]');
-    candidates.forEach((candidate) => {
-        candidate.addEventListener('click', () => {
-            candidates.forEach((row) => {
-                row.classList.toggle('is-selected', row === candidate);
-                row.setAttribute('aria-pressed', String(row === candidate));
-            });
-            candidateDemo.querySelector('[data-candidate-name]').textContent = candidate.dataset.name;
-            candidateDemo.querySelector('[data-candidate-summary]').textContent = candidate.dataset.summary;
-            candidateDemo.querySelector('[data-candidate-status]').textContent = candidate.dataset.status;
-        });
-    });
-}
-
 const navigation = document.getElementById('main-navigation');
 
 if (menuToggle && navigation) {
@@ -59,10 +46,19 @@ if (menuToggle && navigation) {
         setMenuOpen(menuToggle.getAttribute('aria-expanded') !== 'true');
     });
 
+    navigation.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => setMenuOpen(false));
+    });
+
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && menuToggle.getAttribute('aria-expanded') === 'true') {
             setMenuOpen(false);
             menuToggle.focus();
         }
     });
+
+    window.matchMedia('(min-width: 768px)').addEventListener('change', () => setMenuOpen(false));
 }
+
+initCandidateDemo();
+initScrollAnimations();

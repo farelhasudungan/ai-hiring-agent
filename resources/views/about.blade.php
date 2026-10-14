@@ -1,9 +1,9 @@
 @extends('layouts.app')
-@section('title', 'About — Tim Kami')
+@section('title', 'About — Tim di balik Roku')
 @section('content')
 <section class="page-width py-16 md:py-24">
     <p class="eyebrow mb-6">TIM PENGEMBANG / KELOMPOK 09</p>
-    <h1 class="hero-title max-w-4xl">Tim di balik<br><span class="font-serif italic">Hiring Agents.</span></h1>
+    <h1 class="hero-title max-w-4xl">Tim di balik<br><span class="font-serif italic">Roku.</span></h1>
     <p class="mt-6 max-w-3xl text-lg leading-7 text-body">Kami adalah Kelompok 9, mahasiswa Teknik Informatika Institut Teknologi Sepuluh Nopember. Melalui mata kuliah Pemrograman Berbasis Kerangka Kerja, kami merancang Recruiting and Hiring Agents untuk membantu tim HR mengelola proses rekrutmen dengan dukungan Agentic AI.</p>
     <a class="button-primary mt-8" href="{{ route('home') }}">Jelajahi proyek kami <span aria-hidden="true">→</span></a>
     <div class="mt-16 grid gap-6 md:grid-cols-2">

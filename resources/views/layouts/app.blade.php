@@ -3,8 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Recruiting and Hiring Agents membantu tim HR merangkum lamaran, menemukan kandidat yang tepat, dan menyusun shortlist dengan dukungan AI. Jelajahi demo produknya.">
-    <title>@yield('title', 'Recruiting and Hiring Agents')</title>
+    <meta name="description" content="Roku mengubah lamaran dari Gmail dan form menjadi ranking kandidat dengan alasan yang jelas. AI membantu menilai, Anda tetap memutuskan. Coba demo interaktifnya.">
+    <meta name="theme-color" content="#ffffff">
+    <title>@yield('title', 'Roku — Dari kotak masuk ke shortlist')</title>
     <script>
         (() => {
             let theme;
@@ -17,40 +18,56 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..500&family=Source+Serif+4:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="flex min-h-screen flex-col">
-    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-ink focus:p-4 focus:text-canvas">Lewati ke konten</a>
-    <header class="sticky top-0 z-30 border-b border-hairline bg-canvas">
-        <nav class="page-width flex min-h-18 flex-wrap items-center justify-between gap-3 py-3" aria-label="Navigasi utama">
-            <a href="{{ route('home') }}" class="flex items-center gap-3 text-lg tracking-tight" aria-label="Recruiting and Hiring Agents — Beranda">
-                <span class="flex size-8 items-center justify-center rounded-[3px] border border-ink font-mono text-sm" aria-hidden="true">&gt;_</span>
-                Hiring Agents
-            </a>
-            <div class="flex items-center gap-2 md:order-last">
-                <button type="button" class="theme-toggle flex size-11 items-center justify-center rounded-[3px] border border-hairline hover:bg-surface" data-theme-toggle aria-label="Aktifkan light mode" aria-pressed="false">
-                    <svg class="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
-                    <svg class="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/></svg>
-                </button>
-                <button type="button" class="flex size-11 items-center justify-center rounded-[3px] border border-hairline md:hidden" data-menu-toggle aria-expanded="false" aria-controls="main-navigation" aria-label="Buka menu navigasi">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded-full focus:bg-ink focus:p-4 focus:text-canvas">Lewati ke konten</a>
+    <header class="relative z-30">
+        <nav class="page-width flex min-h-18 flex-wrap items-center justify-between gap-2 px-4 py-4 sm:px-6 md:grid md:grid-cols-[1fr_auto_1fr] md:px-8" aria-label="Navigasi utama">
+            <a href="{{ route('home') }}" class="justify-self-start font-serif text-3xl leading-none tracking-[-0.06em] sm:text-4xl" aria-label="Roku — Beranda">roku<span class="ml-0.5 inline-block size-1.5 rounded-full bg-ink" aria-hidden="true"></span></a>
+            <div class="ml-auto flex shrink-0 items-center gap-1 md:order-last md:gap-2 md:justify-self-end">
+                <a href="{{ route('filament.admin.auth.login') }}" class="inline-flex min-h-11 items-center rounded-full px-2 text-xs font-[450] whitespace-nowrap transition-colors hover:bg-surface sm:px-3 sm:text-sm">Sign In</a>
+                <a href="{{ route('filament.admin.pages.dashboard') }}" class="button-primary min-h-11 px-4 py-2 text-xs whitespace-nowrap sm:px-5 sm:text-sm">Get started</a>
+                <button type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-surface md:hidden" data-menu-toggle aria-expanded="false" aria-controls="main-navigation" aria-label="Buka menu navigasi">
+                    <x-roku-icon name="menu" />
                 </button>
             </div>
-            <div id="main-navigation" class="hidden w-full flex-col gap-1 md:flex md:w-auto md:flex-row md:items-center md:gap-2">
-                @foreach (['home' => 'Project', 'about' => 'About'] as $name => $label)
-                    <a href="{{ route($name) }}" @if(request()->routeIs($name)) aria-current="page" @endif class="rounded-[3px] px-4 py-3 text-sm transition-colors hover:bg-surface md:py-2 {{ request()->routeIs($name) ? 'text-ink bg-surface' : 'text-body' }}">{{ $label }}</a>
-                @endforeach
+            <div id="main-navigation" class="hidden w-full flex-col gap-1 md:flex md:w-auto md:flex-row md:items-center md:gap-6">
+                <a href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm transition-colors hover:bg-surface md:py-2">Project</a>
+                <a href="{{ route('about') }}" @if(request()->routeIs('about')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm text-body transition-colors hover:bg-surface hover:text-ink md:py-2">About</a>
             </div>
         </nav>
     </header>
     <main id="main" class="flex-1">@yield('content')</main>
     <footer class="border-t border-hairline">
-        <div class="page-width grid gap-10 py-12 md:grid-cols-[2fr_1fr]">
-            <div><a href="{{ route('home') }}" class="text-lg tracking-tight">Recruiting and Hiring Agents</a><p class="mt-4 max-w-sm text-sm leading-6 text-body">Lebih sedikit screening. Lebih banyak talenta tepat.<br>Partner AI untuk langkah rekrutmen berikutnya.</p></div>
-            <div><p class="eyebrow mb-4">Jelajahi</p><div class="flex flex-col items-start gap-3 text-sm text-body"><a class="hover:text-ink" href="{{ route('home') }}">Project</a><a class="hover:text-ink" href="{{ route('about') }}">About / Tim Kami</a></div></div>
+        <div class="page-width grid gap-10 py-12 md:grid-cols-[2fr_1fr_1fr] md:py-16">
+            <div>
+                <a href="{{ route('home') }}" class="font-serif text-4xl tracking-[-0.06em]" aria-label="Roku — Beranda">roku.</a>
+                <p class="mt-4 max-w-xs text-sm leading-6 text-body">Dari kotak masuk ke shortlist.<br>Lebih banyak waktu untuk mengenal manusia di balik CV.</p>
+            </div>
+            <div>
+                <p class="mb-4 text-sm font-medium">Produk</p>
+                <div class="flex flex-col items-start gap-3 text-sm text-body">
+                    <a class="underline-offset-4 hover:text-ink hover:underline" href="{{ route('home') }}#cara-kerja">Cara kerja</a>
+                    <a class="underline-offset-4 hover:text-ink hover:underline" href="{{ route('home') }}#demo">Demo interaktif</a>
+                    <a class="underline-offset-4 hover:text-ink hover:underline" href="{{ route('home') }}#faq">Tanya jawab</a>
+                </div>
+            </div>
+            <div>
+                <p class="mb-4 text-sm font-medium">Di balik Roku</p>
+                <a class="text-sm text-body underline-offset-4 hover:text-ink hover:underline" href="{{ route('about') }}">About / Tim Kami →</a>
+                <p class="mt-4 text-xs leading-5 text-muted">Proyek Recruiting and Hiring Agents.<br>Dikembangkan oleh Kelompok 09, ITS.</p>
+            </div>
         </div>
-        <div class="page-width flex flex-wrap justify-between gap-3 pb-8 font-mono text-xs text-muted"><span>© {{ date('Y') }} Hiring Agents</span><span>Built for people. Powered by AI.</span></div>
+        <div class="page-width flex flex-wrap justify-between gap-3 pb-24 text-xs text-muted">
+            <span>© {{ date('Y') }} Roku</span>
+            <span>AI membantu. Manusia memutuskan.</span>
+        </div>
     </footer>
+    <button type="button" class="fixed right-[max(1.5rem,env(safe-area-inset-right))] bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-40 flex size-12 items-center justify-center rounded-full border border-hairline bg-elevated text-ink transition-colors hover:bg-surface" data-theme-toggle aria-label="Aktifkan dark mode" aria-pressed="false">
+        <x-roku-icon name="sun" class="theme-icon-light" />
+        <x-roku-icon name="moon" class="theme-icon-dark" />
+    </button>
 </body>
 </html>

@@ -11,7 +11,7 @@ class PageTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertViewIs('home')
-            ->assertSee('Recruiting and Hiring Agents')
+            ->assertSee('Roku')
             ->assertSee('Ranking Kandidat')
             ->assertSee('data-theme-toggle', false)
             ->assertSee('Project')
@@ -37,20 +37,33 @@ class PageTest extends TestCase
             ->assertDontSee('Laboratorium departemen');
     }
 
-    public function test_navigation_has_no_demo_button_and_hero_has_one_primary_action(): void
+    public function test_navigation_has_panel_actions_and_hero_links_to_the_demo_and_workflow(): void
     {
         $response = $this->get('/')->assertOk();
         $content = $response->getContent();
 
         preg_match('/<nav\b[^>]*>(.*?)<\/nav>/s', $content, $navigation);
         $this->assertStringNotContainsString('#demo', $navigation[1]);
-        $this->assertStringNotContainsString('Jelajahi demo', $navigation[1]);
+        $this->assertStringNotContainsString('Cara kerja', $navigation[1]);
+        $this->assertStringNotContainsString('data-theme-toggle', $navigation[1]);
+        $this->assertStringContainsString('Sign In', $navigation[1]);
+        $this->assertStringContainsString('Get started', $navigation[1]);
+        $this->assertStringContainsString('href="'.route('filament.admin.auth.login').'"', $navigation[1]);
+        $this->assertStringContainsString('href="'.route('filament.admin.pages.dashboard').'"', $navigation[1]);
 
         preg_match('/<section\b[^>]*aria-labelledby="hero-heading"[^>]*>(.*?)<\/section>/s', $content, $hero);
-        $this->assertStringContainsString('Temukan talenta tepat.', $hero[1]);
-        $this->assertSame(1, substr_count($hero[1], '<a '));
+        $this->assertStringContainsString('Dari kotak masuk,', $hero[1]);
+        $this->assertStringContainsString('ke shortlist.', $hero[1]);
+        $this->assertSame(1, substr_count($hero[1], 'class="button-primary"'));
+        $this->assertStringContainsString('href="#demo"', $hero[1]);
+        $this->assertStringContainsString('href="#cara-kerja"', $hero[1]);
         $this->assertStringNotContainsString('data-candidate-demo', $hero[1]);
-        $response->assertSee('data-candidate-demo', false);
+        $response->assertSee('data-candidate-demo', false)
+            ->assertSee('Data ilustrasi')
+            ->assertSee('Riset pengguna dan design system sesuai kebutuhan posisi.')
+            ->assertSee('Prototyping kuat; kedalaman riset masih perlu digali.')
+            ->assertSee('Visual kuat; pengalaman produk dan riset perlu ditinjau.')
+            ->assertSee('Roku tidak menerima atau menolak kandidat secara otomatis.');
     }
 
     public function test_old_project_url_redirects_to_home(): void

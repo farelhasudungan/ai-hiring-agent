@@ -12,11 +12,12 @@
 ## Frontend and design
 
 - Assets enter through `resources/css/app.css` and `resources/js/app.js` (`vite.config.js`); the shared Blade layout loads both with `@vite`. Tailwind CSS v4 design tokens and shared component classes live in the CSS entrypoint.
-- Use `DESIGN.md` for colors, typography, spacing, and component treatments rather than duplicating its tokens here. The implemented UI also supports a warm light theme through CSS token overrides.
+- Use `DESIGN.md` for colors, typography, spacing, and component treatments rather than duplicating its tokens here. The public UI follows its paper-white editorial theme, with Source Serif 4 and Inter substitutes, pill controls, rounded cards, and one peach callout. Semantic token overrides also support dark mode.
 - Theme selection uses `html[data-theme]` and the `localStorage` key `theme`. The inline script in the layout initializes the theme before assets load; `app.js` handles toggling, accessible button labels, and system preference changes when there is no explicit selection. Keep these paths consistent and preserve fallback behavior when storage is unavailable.
-- `app.js` also handles mobile navigation and candidate selection in the demo. Preserve its `data-*` hooks when editing markup and keep initialization safe on pages without those elements.
-- Keep landing-page copy product-focused. The hero is a simple centered section with one primary CTA and a minimum height of `calc(100svh - 4.5rem)` to account for the navbar. The interactive candidate preview is a separate section below the hero.
-- The current navbar contains Project (linking to `home`), About, and a theme toggle; the mobile menu has its own toggle. Keep the demo CTA in page content rather than the navbar. Demo data must remain clearly identified as illustrative.
+- `app.js` handles mobile navigation and imports the demo and scroll behavior from `resources/js/landing.js`. Preserve their `data-*` hooks and keep initialization safe on pages without those elements. Scroll reveals, desktop artifact parallax, and workflow progress respect reduced-motion preferences; content must remain visible without JavaScript.
+- Follow `docs/landingpage.md` for the public Roku positioning: Gmail/form applications become an explained candidate ranking, and humans make selection decisions. The hero combines centered serif copy and four floating UI artifacts with a primary demo CTA and a secondary workflow CTA. Hero, workflow, and demo markup live in `resources/views/partials/landing/`.
+- The navbar's page links are Project (linking to `home`) and About. Sign In links to the Filament login and Get started to the admin dashboard on the right; the mobile menu has its own toggle. The theme toggle is fixed to the viewport's bottom-right corner with safe-area spacing.
+- Keep the demo CTA in page content rather than the navbar. Every demo score includes a reason; candidate selection, manual prioritization, and reset are browser-only illustrations. The page identifies live recruitment and Gmail/form integrations as in development.
 
 ## Product roadmap and implementation conventions
 
