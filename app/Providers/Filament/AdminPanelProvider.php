@@ -31,10 +31,12 @@ class AdminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->passwordReset()
             ->profile()
-            ->brandName('Hiring Agents')
+            ->brandName('Roku')
             ->favicon(asset('favicon.ico'))
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => view('filament.auth.styles'), scopes: Login::class)
             ->renderHook(PanelsRenderHook::SIMPLE_LAYOUT_START, fn () => view('filament.auth.navigation'), scopes: Login::class)
+            ->renderHook(PanelsRenderHook::SIMPLE_PAGE_START, fn () => view('filament.auth.introduction'), scopes: Login::class)
+            ->renderHook(PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, fn () => view('filament.auth.help'), scopes: Login::class)
             ->renderHook(PanelsRenderHook::SIMPLE_LAYOUT_END, fn () => view('filament.auth.footer'), scopes: Login::class)
             ->colors([
                 'primary' => Color::Stone,

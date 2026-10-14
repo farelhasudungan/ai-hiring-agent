@@ -31,7 +31,7 @@ Gunakan tautan lupa password di halaman login. Konfigurasikan `APP_URL` agar URL
 
 ## Assets dan pemeriksaan
 
-Assets bawaan Filament dipublikasikan oleh hook Composer `filament:upgrade`. Jika perlu, jalankan `php artisan filament:assets`. Panel memakai stylesheet Filament terpisah dari Tailwind website publik dan mendukung pilihan tema bawaannya.
+Assets bawaan Filament dipublikasikan oleh hook Composer `filament:upgrade`. Jika perlu, jalankan `php artisan filament:assets`. Halaman login memakai stylesheet terpisah `resources/css/filament/login.css` mengikuti token `DESIGN.md` (kanvas putih, kartu fog, tombol pill, input 16px, aksen peach sekali pakai), dengan terjemahan Bahasa Indonesia dan pilihan tema terang/gelap/sistem. Form login tetap memakai komponen dan validasi bawaan Filament.
 
 ```bash
 php artisan test tests/Feature/PanelAuthTest.php
