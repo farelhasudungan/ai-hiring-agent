@@ -1,41 +1,150 @@
-# Repository notes
+<laravel-boost-guidelines>
+=== foundation rules ===
 
-## Current application
+# Laravel Boost Guidelines
 
-- This is a single Laravel 12 app for **Recruiting and Hiring Agents**, not a monorepo. It provides a product landing page, illustrative candidate demo, About page, and Filament 5 authentication panel. Recruitment workflows, AI integration, and selection emails are still planned.
-- The panel is configured in `app/Providers/Filament/AdminPanelProvider.php` at `/admin`, with built-in login, logout, password reset, and profile. `User::canAccessPanel()` requires an active admin/HR account. Run `php artisan app:create-staff` to create one interactively; see `docs/authentication.md`. Auth tests are in `tests/Feature/PanelAuthTest.php`.
-- `routes/web.php` maps `GET /` (named `home`) to `PageController::index()` and `GET /about` (named `about`) to `PageController::about()` in `app/Http/Controllers/PageController.php`.
-- `/` renders `resources/views/home.blade.php`; `/about` renders `resources/views/about.blade.php`. Both extend `resources/views/layouts/app.blade.php`. Keep view names aligned with their page purpose.
-- `/project-idea` is a permanent (301) redirect to `/`, not a separate page or named `project` route. The calculator route and the old `project.blade.php` and `hitung.blade.php` views have been removed. `tests/Feature/CalculatorTest.php` now checks that the calculator URL returns 404.
-- The About page contains four team members; the member list is currently defined in that Blade view. Its cards use one column on mobile, two on tablet, and four on desktop.
+## Foundational Context
 
-## Frontend and design
+This application is a Laravel application running on PHP 8.4. Always use the APIs that match the installed major version of each package — do not assume a version.
 
-- Assets enter through `resources/css/app.css` and `resources/js/app.js` (`vite.config.js`); the shared Blade layout loads both with `@vite`. Tailwind CSS v4 design tokens and shared component classes live in the CSS entrypoint.
-- Use `DESIGN.md` for colors, typography, spacing, and component treatments rather than duplicating its tokens here. The public UI follows its paper-white editorial theme, with Source Serif 4 and Inter substitutes, pill controls, rounded cards, and one peach callout. Semantic token overrides also support dark mode.
-- Theme selection uses `html[data-theme]` and the `localStorage` key `theme`. The inline script in the layout initializes the theme before assets load; `app.js` handles toggling, accessible button labels, and system preference changes when there is no explicit selection. Keep these paths consistent and preserve fallback behavior when storage is unavailable.
-- `app.js` handles mobile navigation and imports the demo and scroll behavior from `resources/js/landing.js`. Preserve their `data-*` hooks and keep initialization safe on pages without those elements. Scroll reveals, desktop artifact parallax, and workflow progress respect reduced-motion preferences; content must remain visible without JavaScript.
-- Follow `docs/landingpage.md` for the public Roku positioning: Gmail/form applications become an explained candidate ranking, and humans make selection decisions. The hero combines centered serif copy and four floating UI artifacts with a primary demo CTA and a secondary workflow CTA. Hero, workflow, and demo markup live in `resources/views/partials/landing/`.
-- The navbar's page links are Project (linking to `home`) and About. Sign In links to the Filament login and Get started to the admin dashboard on the right; the mobile menu has its own toggle. The theme toggle is fixed to the viewport's bottom-right corner with safe-area spacing.
-- Keep the demo CTA in page content rather than the navbar. Every demo score includes a reason; candidate selection, manual prioritization, and reset are browser-only illustrations. The page identifies live recruitment and Gmail/form integrations as in development.
+Before relying on a package's API, confirm its installed version:
+- PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
+- JS packages: check `package.json` for the installed versions.
 
-## Product roadmap and implementation conventions
+## Skills Activation
 
-- Use `PRD.md` as the development baseline: it contains P0/P1/P2 scope, requirements and acceptance criteria, data models, backlog B01–B20, and milestones. Its estimates and open decisions are planning assumptions; check the code and dependencies before treating a feature as available.
-- The planned MVP serves one organization with admin/HR accounts; candidates apply without accounts. Public job listings and application forms are future additions to the existing public pages.
-- For the planned internal panel, use **Filament's built-in authentication**. Do not add a separate Fortify/starter-kit auth stack just for the panel. Use Laravel Policies and panel access checks for authorization; Spatie Permission is optional for more complex future roles.
-- Filament 5 and Livewire 4 are installed. Composer resolves against PHP 8.2 via `config.platform`; maintain compatibility when changing dependencies. The Composer `filament:upgrade` hook publishes panel assets, which are gitignored. Commit dependency lockfiles when dependencies change.
-- Keep `PageController` for static pages. Put recruitment features in dedicated controllers, request validators, domain actions/services, and Filament resources; share business rules between public endpoints and panel actions.
-- Use `job_postings` for recruitment vacancies: the existing `jobs` table belongs to Laravel's database queue. PostgreSQL is planned for staging/production; SQLite remains the current default for local setup and tests.
-- Follow the PRD's async analysis and notification design: keep CVs private, validate structured AI output, separate analysis status from selection stage, and make retries/idempotency explicit. AI recommends; HR records final selection decisions.
-- Consult the PRD for provider selection, scoring rules, email behavior, and integration scope. Inbox ingestion and Google Calendar integration are P1 work, not prerequisites for the form-based MVP.
+This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
-## Local setup and checks
+## Conventions
 
-- `.env.example` defaults to SQLite **and database-backed sessions, cache, and queue**. On a fresh clone: `composer install`, copy `.env.example` to `.env` if absent, `php artisan key:generate`, `touch database/database.sqlite`, then `php artisan migrate`; install frontend dependencies with `npm ci`. Never regenerate an existing application's `APP_KEY` casually.
-- Do not rely on `composer setup` on a fresh clone without first creating `database/database.sqlite`: its script runs `migrate --force` before anything creates the SQLite file. `composer`'s `post-create-project-cmd` does create it, but that is a separate hook.
-- `composer run dev` starts the PHP server, database queue listener, Pail logs, and Vite together; `--kill-others` stops all four if one fails. Run `npm ci` first or `vite: command not found` will stop the stack. `npm run build` verifies frontend compilation.
-- `composer test` clears cached configuration then runs the PHP tests. Page tests are in `tests/Feature/PageTest.php`; run them with `php artisan test tests/Feature/PageTest.php`, or run a single test with `php artisan test --filter=test_about_displays_the_team`.
-- `phpunit.xml` uses in-memory SQLite, array sessions/cache, and a synchronous queue for tests; no local SQLite file is required for that suite. Future PostgreSQL-specific behavior needs integration coverage against PostgreSQL as described in the PRD.
-- Existing page tests cover view names, team data, theme/demo markup, hero/navigation structure, and the legacy redirect. When intentionally changing these behaviors, update the corresponding assertions. Check interactive behavior and responsive layouts in both themes for UI changes; PHP markup tests alone do not verify browser behavior.
-- PHP formatting is via `vendor/bin/pint`; use `vendor/bin/pint --test` for a read-only check. No JS lint or typecheck script is configured in `package.json`.
+- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
+- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
+- Check for existing components to reuse before writing a new one.
+
+## Verification Scripts
+
+- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
+
+## Application Structure & Architecture
+
+- Stick to existing directory structure; don't create new base folders without approval.
+- Do not change the application's dependencies without approval.
+
+## Frontend Bundling
+
+- If a frontend change doesn't show in the UI or you get a "Unable to locate file in Vite manifest" error, run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+
+## Documentation Files
+
+- You must only create documentation files if explicitly requested by the user.
+
+=== boost rules ===
+
+# Laravel Boost
+
+## Tools
+
+- Laravel Boost is an MCP server with tools designed specifically for this application. Prefer Boost tools over manual alternatives like shell commands or file reads.
+- Use `database-query` to run read-only queries against the database instead of writing raw SQL in tinker.
+- Use `database-schema` to inspect table structure before writing migrations or models.
+- Use `get-absolute-url` to resolve the correct scheme, domain, and port for project URLs. Always use this before sharing a URL with the user.
+- Use `browser-logs` to read browser logs, errors, and exceptions. Only recent logs are useful, ignore old entries.
+
+## Searching Documentation (IMPORTANT)
+
+- Use `search-docs` before changes that depend on Laravel ecosystem APIs, behavior, configuration, or version-specific syntax. Skip it for copy-only edits and other changes where package documentation is irrelevant. Reuse sufficient results already in context instead of searching again.
+- Pass a `packages` array to scope results when you know which packages are relevant.
+- Use multiple broad, topic-based queries: `['rate limiting', 'routing rate limiting', 'routing']`. Expect the most relevant results first.
+- Do not add package names to queries because package info is already shared. Use `test resource table`, not `filament 4 test resource table`.
+
+### Search Syntax
+
+1. Use words for auto-stemmed AND logic: `rate limit` matches both "rate" AND "limit".
+2. Use `"quoted phrases"` for exact position matching: `"infinite scroll"` requires adjacent words in order.
+3. Combine words and phrases for mixed queries: `middleware "rate limit"`.
+4. Use multiple queries for OR logic: `queries=["authentication", "middleware"]`.
+
+## Project Rules
+
+- This project contains committed, area-grouped rules in `.ai/rules` when that directory exists, including path-scoped framework guidelines under `.ai/rules/boost`. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule. If `.ai/rules` does not exist, continue without it.
+
+## Artisan
+
+- Run Artisan commands directly via the command line (e.g., `php artisan route:list`). Use `php artisan list` to discover available commands and `php artisan [command] --help` to check parameters.
+- Inspect routes with `php artisan route:list`. Filter with: `--method=GET`, `--name=users`, `--path=api`, `--except-vendor`, `--only-vendor`.
+- Read configuration values using dot notation: `php artisan config:show app.name`, `php artisan config:show database.default`. Or read config files directly from the `config/` directory.
+
+## Tinker
+
+- Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
+- Always use single quotes to prevent shell expansion: `php artisan tinker --execute 'Your::code();'`
+  - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
+
+=== php rules ===
+
+# PHP
+
+- Always use curly braces for control structures, even for single-line bodies.
+- Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
+- Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
+- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
+- Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
+- Use array shape type definitions in PHPDoc blocks.
+
+=== deployments rules ===
+
+# Deployment
+
+- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+- Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
+
+=== laravel/core rules ===
+
+# Do Things the Laravel Way
+
+- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using `php artisan list` and check their parameters with `php artisan [command] --help`.
+- If you're creating a generic PHP class, use `php artisan make:class`.
+- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
+
+### Model Creation
+
+- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
+
+## APIs & Eloquent Resources
+
+- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
+
+## URL Generation
+
+- When generating links to other pages, prefer named routes and the `route()` function.
+
+## Testing
+
+- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
+- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
+- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+
+=== pint/core rules ===
+
+# Laravel Pint Code Formatter
+
+- If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
+- Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
+
+=== pest/core rules ===
+
+# Pest
+
+- This project uses Pest. Create tests with `php artisan make:test --pest {name}`.
+- Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
+- Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
+- Do not delete tests or test files without approval. They are part of the application.
+
+## Running Tests
+
+- Run the narrowest set of tests that covers the change. Pass a file path or `--filter=testName` to `php artisan test --compact`.
+- Rerun a test after each change to it.
+- Run `vendor/bin/pest` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
+- After the feature tests pass, ask the user to run the complete suite with `php artisan test --compact`.
+
+</laravel-boost-guidelines>
