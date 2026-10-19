@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Database\Factories\ApplicationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +19,39 @@ class Application extends Model
 {
     /** @use HasFactory<ApplicationFactory> */
     use HasFactory;
+
+    /** @return array<string, string> */
+    public static function statusOptions(): array
+    {
+        return [
+            'received' => 'Diterima',
+            'queued' => 'Dalam antrean',
+            'parsing' => 'Membaca dokumen',
+            'analyzing' => 'Dianalisis',
+            'scored' => 'Sudah dinilai',
+            'failed' => 'Gagal',
+            'shortlisted' => 'Lolos seleksi',
+            'rejected' => 'Ditolak',
+            'interview' => 'Wawancara',
+            'hired' => 'Diterima bekerja',
+            'archived' => 'Diarsipkan',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public static function sourceOptions(): array
+    {
+        return ['form' => 'Formulir', 'gmail' => 'Gmail', 'manual' => 'Manual'];
+    }
+
+    #[Scope]
+    protected function forCompany(Builder $query, ?int $companyId): Builder
+    {
+        return $query
+            ->where('applications.company_id', $companyId)
+            ->whereHas('candidate', fn (Builder $candidate): Builder => $candidate->where('company_id', $companyId))
+            ->whereHas('job', fn (Builder $job): Builder => $job->where('company_id', $companyId));
+    }
 
     public function company(): BelongsTo
     {
