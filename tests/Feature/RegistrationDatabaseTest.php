@@ -146,6 +146,9 @@ test('admins issue hashed invitations only for their own company', function () {
 
     $invitation = CompanyInvitation::query()->sole();
     parse_str(parse_url($page->get('invitationUrl'), PHP_URL_QUERY), $query);
+    expect($page->get('invitationCode'))->toBe($query['invitation']);
+    $page->assertSee('Kode undangan')
+        ->assertSee('value="'.$query['invitation'].'"', false);
     expect($invitation->company_id)->toBe($user->company_id);
     expect($invitation->created_by)->toBe($user->id);
     expect($invitation->token_hash)->toBe(hash('sha256', $query['invitation']));

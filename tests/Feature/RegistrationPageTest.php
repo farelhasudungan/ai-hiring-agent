@@ -310,6 +310,51 @@ test('invitation submit button uses the spaced Filament form footer', function (
     expect(trim($buttons->item(0)->textContent))->toBe('Buat link undangan');
 });
 
+test('invitation results display the original code separately from its registration link', function () {
+    $code = str_repeat('Ab12', 16);
+    $url = route('filament.admin.auth.register', ['invitation' => $code]);
+
+    $view = $this->blade('<x-company-invitation-result :code="$code" :url="$url" />', compact('code', 'url'));
+    $view->assertSee('Kode undangan')
+        ->assertSee('Link undangan')
+        ->assertDontSee('Salin seluruh kode ini')
+        ->assertDontSee('Huruf besar dan kecil harus tetap sama.');
+
+    $document = new DOMDocument;
+    $document->loadHTML((string) $view, LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $codeInput = $xpath->query('//input[@id="invitation-code"]')->item(0);
+    $urlInput = $xpath->query('//input[@id="invitation-url"]')->item(0);
+
+    expect($codeInput->getAttribute('value'))->toBe($code);
+    expect($codeInput->hasAttribute('readonly'))->toBeTrue();
+    expect($urlInput->getAttribute('value'))->toBe($url);
+    expect($urlInput->hasAttribute('readonly'))->toBeTrue();
+});
+
+test('both invitation fields have accessible copy buttons connected to their own value', function () {
+    $code = str_repeat('Ab12', 16);
+    $url = route('filament.admin.auth.register', ['invitation' => $code]);
+    $view = $this->blade('<x-company-invitation-result :code="$code" :url="$url" />', compact('code', 'url'));
+
+    $document = new DOMDocument;
+    $document->loadHTML((string) $view, LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $buttons = $xpath->query('//button');
+
+    expect($buttons->length)->toBe(2);
+
+    foreach (['invitation-code' => 'Salin kode undangan', 'invitation-url' => 'Salin link undangan'] as $id => $label) {
+        $button = $xpath->query('//button[@aria-label="'.$label.'"]')->item(0);
+
+        expect($button)->not->toBeNull();
+        expect($button->getAttribute('type'))->toBe('button');
+        expect($button->getAttribute('x-data'))->toBe('filamentCopyable');
+        expect($button->getAttribute('x-on:click.prevent.stop'))->toContain("document.getElementById('{$id}').value");
+        expect($xpath->query('.//*[local-name()="svg"]', $button)->length)->toBe(1);
+    }
+});
+
 test('invitation creation rechecks admin access after the page was opened', function () {
     $user = User::factory()->make(['id' => 1, 'company_id' => 1, 'role' => 'admin']);
     $page = Livewire::actingAs($user)->test(CompanyInvitations::class);

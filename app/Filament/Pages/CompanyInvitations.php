@@ -39,6 +39,9 @@ class CompanyInvitations extends Page
     #[Locked]
     public ?string $invitationUrl = null;
 
+    #[Locked]
+    public ?string $invitationCode = null;
+
     public static function canAccess(): bool
     {
         $user = Filament::auth()->user();
@@ -84,6 +87,7 @@ class CompanyInvitations extends Page
     {
         abort_unless(static::canAccess(), 403);
         $this->invitationUrl = null;
+        $this->invitationCode = null;
 
         try {
             $this->rateLimit(5);
@@ -106,6 +110,7 @@ class CompanyInvitations extends Page
         $invitation->expires_at = now()->addDays(7);
         $invitation->save();
 
+        $this->invitationCode = $token;
         $this->invitationUrl = route('filament.admin.auth.register', ['invitation' => $token]);
     }
 }

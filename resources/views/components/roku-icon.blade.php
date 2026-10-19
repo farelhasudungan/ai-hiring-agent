@@ -13,6 +13,9 @@
         @case('check')
             <path d="m5 12 4 4L19 6"/>
             @break
+        @case('copy')
+            <rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/>
+            @break
         @case('sliders')
             <path d="M4 7h7m4 0h5M4 17h3m4 0h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>
             @break
