@@ -11,16 +11,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
     <link rel="manifest" href="{{ asset('site.webmanifest') }}">
     <title>@yield('title', 'Roku: Dari kotak masuk ke shortlist')</title>
-    <script>
-        (() => {
-            let theme;
-            try { theme = localStorage.getItem('theme'); } catch {}
-            if (theme !== 'dark' && theme !== 'light') {
-                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            }
-            document.documentElement.dataset.theme = theme;
-        })();
-    </script>
+    <x-theme-script />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..500&family=Source+Serif+4:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
@@ -33,7 +24,7 @@
             <a href="{{ route('home') }}" class="justify-self-start font-serif text-3xl leading-none tracking-[-0.06em] sm:text-4xl" aria-label="Roku — Beranda">roku<span class="ml-0.5 inline-block size-1.5 rounded-full bg-ink" aria-hidden="true"></span></a>
             <div class="ml-auto flex shrink-0 items-center gap-1 md:order-last md:gap-2 md:justify-self-end">
                 <a href="{{ route('filament.admin.auth.login') }}" class="inline-flex min-h-11 items-center rounded-full px-2 text-xs font-[450] whitespace-nowrap transition-colors hover:bg-surface sm:px-3 sm:text-sm">Sign In</a>
-                <a href="{{ route('filament.admin.pages.dashboard') }}" class="button-primary min-h-11 px-4 py-2 text-xs whitespace-nowrap sm:px-5 sm:text-sm">Get started</a>
+                <a href="{{ route('filament.admin.auth.register') }}" class="button-primary min-h-11 px-4 py-2 text-xs whitespace-nowrap sm:px-5 sm:text-sm">Get started</a>
                 <button type="button" class="flex size-11 items-center justify-center rounded-full hover:bg-surface md:hidden" data-menu-toggle aria-expanded="false" aria-controls="main-navigation" aria-label="Buka menu navigasi">
                     <x-roku-icon name="menu" />
                 </button>
