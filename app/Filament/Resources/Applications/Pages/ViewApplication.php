@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Applications\Pages;
 
 use App\Filament\Resources\Applications\Actions\ArchiveApplicationAction;
+use App\Filament\Resources\Applications\Actions\CancelProcessingAction;
+use App\Filament\Resources\Applications\Actions\ProcessApplicationAction;
 use App\Filament\Resources\Applications\ApplicationResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -25,6 +27,8 @@ class ViewApplication extends ViewRecord
     {
         return [
             EditAction::make(),
+            ProcessApplicationAction::make(),
+            CancelProcessingAction::make(),
             ArchiveApplicationAction::make(),
         ];
     }

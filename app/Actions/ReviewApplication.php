@@ -30,6 +30,13 @@ class ReviewApplication
             $record->fill($validated);
 
             if ($record->isDirty('status')) {
+                if ($record->processing_run_id && in_array($record->latest_ai_status, ['queued', 'running'], true)) {
+                    $message = 'Pemrosesan AI dihentikan karena status diubah oleh HR.';
+                    $record->currentScreening()->where('application_id', $record->id)->whereIn('status', ['queued', 'running'])->update([
+                        'status' => 'failed', 'error_message' => $message, 'completed_at' => now(),
+                    ]);
+                    $record->forceFill(['latest_ai_status' => 'failed', 'processing_error' => $message, 'latest_ai_at' => now()]);
+                }
                 $record->reviewed_by = $reviewer->id;
                 $record->reviewed_at = now();
             }

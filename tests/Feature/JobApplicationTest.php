@@ -36,6 +36,8 @@ test('an open job has a public application form without requiring an account', f
         ->assertSee('name="_token"', false)
         ->assertSee('name="resume"', false)
         ->assertSee('name="consent"', false)
+        ->assertSee('Google melalui Gemini API')
+        ->assertSee('CV dummy tanpa data pribadi')
         ->assertDontSee('name="company_id"', false);
 });
 
@@ -103,7 +105,9 @@ test('submission creates company scoped records and private documents with a con
     expect($application->company_id)->toBe($job->company_id);
     expect($application->job_id)->toBe($job->id);
     expect($application->candidate_id)->toBe($candidate->id);
-    expect($application->status)->toBe('received');
+    expect($application->status)->toBe('queued');
+    expect($application->currentScreening->status)->toBe('queued');
+    $this->assertDatabaseCount('queue_jobs', 1);
     expect($application->source)->toBe('form');
     expect($application->submitted_at->eq(now()))->toBeTrue();
     expect($application->latest_match_score)->toBeNull();
@@ -119,7 +123,10 @@ test('submission creates company scoped records and private documents with a con
     expect($coverLetter->parsed_text)->toBe($data['cover_letter']);
     expect($log->application_id)->toBe($application->id);
     expect($log->candidate_id)->toBe($candidate->id);
-    expect($log->meta)->toBe(['data_processing_consent' => true, 'consented_at' => now()->toIso8601String()]);
+    expect($log->meta)->toBe([
+        'data_processing_consent' => true, 'ai_screening_consent' => true,
+        'ai_provider' => 'gemini', 'consent_version' => 'gemini-screening-v1', 'consented_at' => now()->toIso8601String(),
+    ]);
     Storage::disk('local')->assertExists([$resume->file_path, $coverLetter->file_path]);
     expect(Storage::disk('public')->allFiles())->toBe([]);
 
@@ -137,6 +144,21 @@ test('optional fields may be omitted and DOCX resumes are accepted', function ()
     $this->assertDatabaseCount('application_documents', 1);
     expect(Candidate::query()->sole()->portfolio_url)->toBeNull();
     Storage::disk('local')->assertExists(ApplicationDocument::query()->sole()->file_path);
+});
+
+test('queue outages still confirm a public submission without deleting its private files', function () {
+    Storage::fake('local');
+    config(['queue.connections.database.table' => 'nonexistent_queue_table']);
+    $job = Job::factory()->create(['status' => 'open']);
+
+    $this->post(route('jobs.applications.store', $job), validPublicApplication())
+        ->assertRedirect(route('jobs.apply', $job))
+        ->assertSessionHas('application_submitted', true)->assertSessionHasNoErrors();
+
+    $application = Application::query()->sole();
+    expect($application->status)->toBe('failed');
+    expect($application->processing_error)->toContain('Antrean tidak tersedia');
+    Storage::disk('local')->assertExists($application->documents()->sole()->file_path);
 });
 
 test('required public application fields and consent are validated', function () {

@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ApplicationResource extends Resource
 {
@@ -42,8 +43,11 @@ class ApplicationResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->forCompany(Filament::auth()->user()?->company_id)
-            ->with(['candidate', 'job', 'reviewer' => fn (BelongsTo $query): BelongsTo => $query
-                ->where('company_id', Filament::auth()->user()?->company_id)]);
+            ->with(['candidate', 'job',
+                'currentScreening' => fn (HasOne $query): HasOne => $query
+                    ->whereHas('application', fn (Builder $application): Builder => $application->forCompany(Filament::auth()->user()?->company_id)),
+                'reviewer' => fn (BelongsTo $query): BelongsTo => $query
+                    ->where('company_id', Filament::auth()->user()?->company_id)]);
     }
 
     public static function form(Schema $schema): Schema

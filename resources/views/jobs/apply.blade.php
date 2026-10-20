@@ -57,7 +57,7 @@
                             <input id="application-consent" name="consent" type="checkbox" value="1" required @checked(old('consent') === '1') class="mt-1 size-4 shrink-0 accent-ink"
                                 aria-invalid="{{ $errors->has('consent') ? 'true' : 'false' }}"
                                 @error('consent') aria-describedby="application-consent-error" @enderror>
-                            <span>Saya menyetujui pemrosesan data pribadi dan dokumen lamaran oleh {{ $job->company->name }} untuk proses rekrutmen posisi ini. *</span>
+                            <span>Saya menyetujui pemrosesan data pribadi dan dokumen lamaran oleh {{ $job->company->name }} untuk proses rekrutmen posisi ini, termasuk pengiriman teks CV ke Google melalui Gemini API untuk analisis awal. Untuk pengujian layanan Gemini gratis, gunakan CV dummy tanpa data pribadi, sensitif, atau rahasia. Hasil AI membantu penilaian, bukan keputusan penerimaan otomatis. *</span>
                         </label>
                         @error('consent')<p id="application-consent-error" class="mt-2 text-sm text-body" role="alert">{{ $message }}</p>@enderror
                     </div>

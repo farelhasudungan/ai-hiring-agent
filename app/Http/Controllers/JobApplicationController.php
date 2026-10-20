@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\StartApplicationScreening;
 use App\Http\Requests\StoreJobApplicationRequest;
 use App\Models\Candidate;
 use App\Models\Job;
@@ -22,13 +23,13 @@ class JobApplicationController extends Controller
         return view('jobs.apply', ['job' => $job->load('company')]);
     }
 
-    public function store(StoreJobApplicationRequest $request, Job $job): RedirectResponse
+    public function store(StoreJobApplicationRequest $request, Job $job, StartApplicationScreening $screening): RedirectResponse
     {
         $data = $request->validated();
         $storedPaths = [];
 
         try {
-            DB::transaction(function () use ($data, $job, &$storedPaths): void {
+            $application = DB::transaction(function () use ($data, $job, &$storedPaths) {
                 // Recheck under a lock: a form opened earlier may now be closed.
                 $openJob = Job::query()->whereKey($job->id)->where('status', 'open')->lockForUpdate()->firstOrFail();
 
@@ -96,9 +97,14 @@ class JobApplicationController extends Controller
                     'description' => 'Lamaran dikirim melalui formulir publik.',
                     'meta' => [
                         'data_processing_consent' => true,
+                        'ai_screening_consent' => true,
+                        'ai_provider' => 'gemini',
+                        'consent_version' => 'gemini-screening-v1',
                         'consented_at' => now()->toIso8601String(),
                     ],
                 ]);
+
+                return $application;
             });
         } catch (Throwable $exception) {
             if ($storedPaths !== []) {
@@ -107,6 +113,9 @@ class JobApplicationController extends Controller
 
             throw $exception;
         }
+
+        // Outside upload rollback handling: committed files must survive queue failures.
+        $screening->handle($application);
 
         return to_route('jobs.apply', $job)->with('application_submitted', true);
     }

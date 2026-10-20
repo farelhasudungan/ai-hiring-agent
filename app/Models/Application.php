@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'company_id', 'candidate_id', 'job_id', 'source', 'status', 'latest_match_score',
@@ -42,6 +43,29 @@ class Application extends Model
     public static function sourceOptions(): array
     {
         return ['form' => 'Formulir', 'gmail' => 'Gmail', 'manual' => 'Manual'];
+    }
+
+    public static function aiStatusOptions(): array
+    {
+        return ['queued' => 'Dalam antrean', 'running' => 'Diproses', 'success' => 'Selesai', 'failed' => 'Gagal', 'cancelled' => 'Dibatalkan'];
+    }
+
+    public function canStartScreening(): bool
+    {
+        return in_array($this->status, ['received', 'failed', 'scored'], true)
+            && ! in_array($this->latest_ai_status, ['queued', 'running'], true);
+    }
+
+    public function canCancelScreening(): bool
+    {
+        return filled($this->processing_run_id)
+            && in_array($this->status, ['queued', 'parsing', 'analyzing'], true)
+            && in_array($this->latest_ai_status, ['queued', 'running'], true);
+    }
+
+    public function currentScreening(): HasOne
+    {
+        return $this->hasOne(AiScreening::class, 'run_id', 'processing_run_id');
     }
 
     #[Scope]

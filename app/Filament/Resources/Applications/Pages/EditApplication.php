@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Applications\Pages;
 
 use App\Actions\ReviewApplication;
 use App\Filament\Resources\Applications\Actions\ArchiveApplicationAction;
+use App\Filament\Resources\Applications\Actions\CancelProcessingAction;
+use App\Filament\Resources\Applications\Actions\ProcessApplicationAction;
 use App\Filament\Resources\Applications\ApplicationResource;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
@@ -31,6 +33,10 @@ class EditApplication extends EditRecord
     {
         return [
             ViewAction::make(),
+            ProcessApplicationAction::make()
+                ->after(fn () => $this->refreshFormData(['status', 'notes'])),
+            CancelProcessingAction::make()
+                ->after(fn () => $this->refreshFormData(['status', 'notes'])),
             ArchiveApplicationAction::make()
                 ->after(fn () => $this->refreshFormData(['status', 'notes'])),
         ];

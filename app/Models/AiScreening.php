@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'raw_response', 'parsed_response', 'match_score', 'recommendation', 'summary',
     'candidate_skills', 'matched_skills', 'missing_skills', 'experience_years',
     'education_level', 'risk_flags', 'error_message', 'started_at', 'completed_at', 'duration_ms',
+    'run_id', 'input_snapshot', 'score_breakdown',
 ])]
 class AiScreening extends Model
 {
@@ -42,6 +43,8 @@ class AiScreening extends Model
             'job_id' => 'integer',
             'document_id' => 'integer',
             'parsed_response' => 'array',
+            'input_snapshot' => 'array',
+            'score_breakdown' => 'array',
             'match_score' => 'integer',
             'candidate_skills' => 'array',
             'matched_skills' => 'array',
