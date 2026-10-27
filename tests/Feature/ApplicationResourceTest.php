@@ -195,11 +195,11 @@ test('invalid review values cannot be saved', function (array $data, array $erro
 
 test('archiving retains application documents and notes and stamps the reviewer', function (string $pageClass) {
     $this->travelTo(now()->startOfSecond());
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id, 'notes' => 'Keep this history.']);
     $document = ApplicationDocument::factory()->create(['application_id' => $application->id]);
-    Storage::disk('local')->put($document->file_path, 'saved CV');
+    Storage::disk('r2')->put($document->file_path, 'saved CV');
 
     Livewire::actingAs($user)->test($pageClass, ['record' => $application->id])
         ->callAction('archive')->assertActionHidden('archive');
@@ -210,7 +210,7 @@ test('archiving retains application documents and notes and stamps the reviewer'
     expect($application->reviewed_by)->toBe($user->id);
     expect($application->reviewed_at->equalTo(now()))->toBeTrue();
     $this->assertModelExists($document);
-    Storage::disk('local')->assertExists($document->file_path);
+    Storage::disk('r2')->assertExists($document->file_path);
 })->with([ViewApplication::class, EditApplication::class]);
 
 test('the list offers archive but never create or delete actions', function () {

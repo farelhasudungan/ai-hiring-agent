@@ -5,11 +5,15 @@ use App\Models\Application;
 use App\Models\ApplicationDocument;
 use App\Models\Candidate;
 use App\Models\Job;
+use Aws\MockHandler;
+use Aws\Result;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\UnableToDeleteFile;
+use League\Flysystem\UnableToWriteFile;
 use Symfony\Component\HttpFoundation\File\File;
 
 uses(RefreshDatabase::class);
@@ -54,7 +58,7 @@ test('application and confirmation pages have no navigation footer or job detail
 })->with(['form' => [false], 'confirmation' => [true]]);
 
 test('non open jobs neither display a form nor accept applications', function (string $status) {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => $status]);
 
     $this->get(route('jobs.apply', $job))->assertNotFound();
@@ -62,7 +66,7 @@ test('non open jobs neither display a form nor accept applications', function (s
 
     $this->assertDatabaseCount('candidates', 0);
     $this->assertDatabaseCount('applications', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
 })->with(['draft', 'closed']);
 
 test('unknown jobs return 404 on both public endpoints', function () {
@@ -71,7 +75,7 @@ test('unknown jobs return 404 on both public endpoints', function () {
 });
 
 test('submission creates company scoped records and private documents with a consent audit', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     Storage::fake('public');
     $this->travelTo(now()->startOfDay());
     $job = Job::factory()->create(['status' => 'open']);
@@ -120,14 +124,14 @@ test('submission creates company scoped records and private documents with a con
     expect($log->application_id)->toBe($application->id);
     expect($log->candidate_id)->toBe($candidate->id);
     expect($log->meta)->toBe(['data_processing_consent' => true, 'consented_at' => now()->toIso8601String()]);
-    Storage::disk('local')->assertExists([$resume->file_path, $coverLetter->file_path]);
+    Storage::disk('r2')->assertExists([$resume->file_path, $coverLetter->file_path]);
     expect(Storage::disk('public')->allFiles())->toBe([]);
 
     $this->get(route('jobs.apply', $job))->assertSee('Lamaran terkirim.')->assertDontSee('name="resume"', false);
 });
 
 test('optional fields may be omitted and DOCX resumes are accepted', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
 
     $this->post(route('jobs.applications.store', $job), validPublicApplication([
@@ -136,11 +140,11 @@ test('optional fields may be omitted and DOCX resumes are accepted', function ()
 
     $this->assertDatabaseCount('application_documents', 1);
     expect(Candidate::query()->sole()->portfolio_url)->toBeNull();
-    Storage::disk('local')->assertExists(ApplicationDocument::query()->sole()->file_path);
+    Storage::disk('r2')->assertExists(ApplicationDocument::query()->sole()->file_path);
 });
 
 test('required public application fields and consent are validated', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
 
     $this->from(route('jobs.apply', $job))->post(route('jobs.applications.store', $job), [])
@@ -154,11 +158,11 @@ test('required public application fields and consent are validated', function ()
         ]);
 
     $this->assertDatabaseCount('applications', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
 });
 
 test('malformed or oversized application fields are rejected without saving records', function (array $overrides, string $field) {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
 
     $this->post(route('jobs.applications.store', $job), validPublicApplication($overrides))
@@ -166,7 +170,7 @@ test('malformed or oversized application fields are rejected without saving reco
 
     $this->assertDatabaseCount('candidates', 0);
     $this->assertDatabaseCount('applications', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
 })->with([
     'invalid email' => [['email' => 'invalid'], 'email'],
     'invalid phone type' => [['phone' => ['123']], 'phone'],
@@ -178,7 +182,7 @@ test('malformed or oversized application fields are rejected without saving reco
 ]);
 
 test('resume validation rejects disallowed types oversized files and disguised content', function (string $case, string $message) {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
     $resume = match ($case) {
         'oversized' => UploadedFile::fake()->create('resume.pdf', 5121, 'application/pdf'),
@@ -195,7 +199,7 @@ test('resume validation rejects disallowed types oversized files and disguised c
         ->assertSessionHasErrors(['resume' => $message]);
 
     $this->assertDatabaseCount('applications', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
 })->with([
     'over 5 MB' => ['oversized', 'Ukuran CV maksimal 5 MB.'],
     'plain text' => ['wrong type', 'CV harus berupa berkas PDF atau DOCX.'],
@@ -204,7 +208,7 @@ test('resume validation rejects disallowed types oversized files and disguised c
 ]);
 
 test('a resume at the 5 MB limit is accepted', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
 
     $this->post(route('jobs.applications.store', $job), validPublicApplication([
@@ -212,11 +216,11 @@ test('a resume at the 5 MB limit is accepted', function () {
     ]))->assertSessionHasNoErrors();
 
     $this->assertDatabaseCount('applications', 1);
-    Storage::disk('local')->assertExists(ApplicationDocument::query()->sole()->file_path);
+    Storage::disk('r2')->assertExists(ApplicationDocument::query()->sole()->file_path);
 });
 
 test('server rejected uploads explain the upload limit without saving an application', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
     $temporaryFile = UploadedFile::fake()->create('resume.pdf', 1, 'application/pdf');
     $resume = new UploadedFile($temporaryFile->getPathname(), 'resume.pdf', 'application/pdf', UPLOAD_ERR_INI_SIZE, true);
@@ -225,11 +229,11 @@ test('server rejected uploads explain the upload limit without saving an applica
         ->assertSessionHasErrors(['resume' => 'CV gagal diunggah. Periksa batas upload server dan coba lagi.']);
 
     $this->assertDatabaseCount('applications', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
 });
 
 test('a public email does not allow overwriting an existing candidate profile', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
     $existing = Candidate::factory()->create([
         'company_id' => $job->company_id,
@@ -241,11 +245,11 @@ test('a public email does not allow overwriting an existing candidate profile', 
 
     expect($existing->fresh()->full_name)->toBe('Verified existing name');
     expect(Application::query()->sole()->candidate_id)->not->toBe($existing->id);
-    Storage::disk('local')->assertExists(ApplicationDocument::query()->sole()->file_path);
+    Storage::disk('r2')->assertExists(ApplicationDocument::query()->sole()->file_path);
 });
 
 test('a persistence failure rolls back candidate and application records and cleans up the uploaded file', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     Exceptions::fake();
     $job = Job::factory()->create(['status' => 'open']);
     ApplicationDocument::creating(function (): never {
@@ -257,7 +261,7 @@ test('a persistence failure rolls back candidate and application records and cle
     $this->assertDatabaseCount('candidates', 0);
     $this->assertDatabaseCount('applications', 0);
     $this->assertDatabaseCount('application_documents', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
     Exceptions::assertReported(fn (RuntimeException $exception): bool => $exception->getMessage() === 'Document persistence failed.');
 });
 
@@ -276,7 +280,7 @@ test('job titles are escaped and descriptions are omitted on the standalone form
 });
 
 test('a late failure removes both private documents and rolls back the consent audit', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     Exceptions::fake();
     $job = Job::factory()->create(['status' => 'open']);
     ActivityLog::creating(function (): never {
@@ -291,12 +295,12 @@ test('a late failure removes both private documents and rolls back the consent a
     $this->assertDatabaseCount('applications', 0);
     $this->assertDatabaseCount('application_documents', 0);
     $this->assertDatabaseCount('activity_logs', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
     Exceptions::assertReported(fn (RuntimeException $exception): bool => $exception->getMessage() === 'Consent audit persistence failed.');
 });
 
 test('a job closed after route binding is rechecked before any records or files are stored', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $job = Job::factory()->create(['status' => 'open']);
     Job::retrieved(function (Job $record): void {
         DB::table('jobs')->where('id', $record->id)->update(['status' => 'closed']);
@@ -306,7 +310,7 @@ test('a job closed after route binding is rechecked before any records or files 
 
     $this->assertDatabaseCount('candidates', 0);
     $this->assertDatabaseCount('applications', 0);
-    expect(Storage::disk('local')->allFiles())->toBe([]);
+    expect(Storage::disk('r2')->allFiles())->toBe([]);
 });
 
 test('public application submission is rate limited', function () {
@@ -317,4 +321,106 @@ test('public application submission is rate limited', function () {
     }
 
     $this->postJson(route('jobs.applications.store', $job), [])->assertTooManyRequests();
+});
+
+test('resumes and cover letters are uploaded through the R2 S3 adapter without local copies', function () {
+    Storage::fake('local');
+    $commands = [];
+    $handler = new MockHandler([
+        function ($command) use (&$commands) {
+            $commands[] = $command;
+
+            return new Result;
+        },
+        function ($command) use (&$commands) {
+            $commands[] = $command;
+
+            return new Result;
+        },
+    ]);
+    Storage::set('r2', Storage::build([
+        ...config('filesystems.disks.r2'),
+        'key' => 'test-key',
+        'secret' => 'test-secret',
+        'bucket' => 'test-documents',
+        'endpoint' => 'https://test-account.r2.cloudflarestorage.com',
+        'handler' => $handler,
+    ]));
+    $job = Job::factory()->create(['status' => 'open']);
+
+    $this->post(route('jobs.applications.store', $job), validPublicApplication([
+        'cover_letter' => 'Saya ingin bergabung.',
+    ]))->assertRedirect()->assertSessionHas('application_submitted', true);
+
+    $documents = Application::query()->sole()->documents()->get();
+    expect($commands)->toHaveCount(2);
+    foreach ($commands as $index => $command) {
+        expect($command->getName())->toBe('PutObject');
+        expect($command['Bucket'])->toBe('test-documents');
+        expect($command['Key'])->toBe($documents[$index]->file_path);
+        expect($command['ACL'])->toBe('private');
+    }
+    expect((string) $commands[1]['Body'])->toBe('Saya ingin bergabung.');
+    expect($handler->getLastRequest()->getUri()->getHost())->toBe('test-account.r2.cloudflarestorage.com');
+    expect($handler->getLastRequest()->hasHeader('x-amz-sdk-checksum-algorithm'))->toBeFalse();
+    expect($handler->getLastRequest()->hasHeader('x-amz-checksum-crc32'))->toBeFalse();
+    expect($handler->count())->toBe(0);
+    Storage::disk('local')->assertEmpty();
+});
+
+test('an R2 upload failure leaves no candidate application or document records', function () {
+    $disk = Storage::fake('r2');
+    $storage = Mockery::mock($disk);
+    $storage->shouldReceive('putFileAs')->once()->andThrow(UnableToWriteFile::atLocation('resume.pdf'));
+    Storage::set('r2', $storage);
+    Exceptions::fake();
+    $job = Job::factory()->create(['status' => 'open']);
+
+    $this->post(route('jobs.applications.store', $job), validPublicApplication())->assertServiceUnavailable();
+
+    $this->assertDatabaseCount('candidates', 0);
+    $this->assertDatabaseCount('applications', 0);
+    $this->assertDatabaseCount('application_documents', 0);
+    $disk->assertEmpty();
+    Exceptions::assertReported(UnableToWriteFile::class);
+});
+
+test('a cover letter upload failure also removes the uploaded resume', function () {
+    $disk = Storage::fake('r2');
+    $storage = Mockery::mock($disk);
+    $storage->shouldReceive('put')->once()->andThrow(UnableToWriteFile::atLocation('cover-letter.txt'));
+    Storage::set('r2', $storage);
+    Exceptions::fake();
+    $job = Job::factory()->create(['status' => 'open']);
+
+    $this->post(route('jobs.applications.store', $job), validPublicApplication([
+        'cover_letter' => 'Saya ingin bergabung.',
+    ]))->assertServiceUnavailable();
+
+    $this->assertDatabaseCount('candidates', 0);
+    $this->assertDatabaseCount('applications', 0);
+    $this->assertDatabaseCount('application_documents', 0);
+    $disk->assertEmpty();
+    Exceptions::assertReported(UnableToWriteFile::class);
+});
+
+test('an R2 cleanup failure is reported without hiding the original persistence failure', function () {
+    $disk = Storage::fake('r2');
+    $storage = Mockery::mock($disk);
+    $storage->shouldReceive('delete')->once()->andThrow(UnableToDeleteFile::atLocation('resume.pdf'));
+    Storage::set('r2', $storage);
+    Exceptions::fake();
+    $job = Job::factory()->create(['status' => 'open']);
+    ApplicationDocument::creating(function (): never {
+        throw new RuntimeException('Document persistence failed.');
+    });
+
+    $this->post(route('jobs.applications.store', $job), validPublicApplication())->assertInternalServerError();
+
+    $this->assertDatabaseCount('candidates', 0);
+    $this->assertDatabaseCount('applications', 0);
+    $this->assertDatabaseCount('application_documents', 0);
+    $disk->assertCount('/', 1, true);
+    Exceptions::assertReported(UnableToDeleteFile::class);
+    Exceptions::assertReported(fn (RuntimeException $exception): bool => $exception->getMessage() === 'Document persistence failed.');
 });

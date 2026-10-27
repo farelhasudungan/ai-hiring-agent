@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use League\Flysystem\FilesystemException;
 use RuntimeException;
 use Throwable;
 
@@ -25,10 +26,11 @@ class JobApplicationController extends Controller
     public function store(StoreJobApplicationRequest $request, Job $job): RedirectResponse
     {
         $data = $request->validated();
+        $disk = Storage::disk();
         $storedPaths = [];
 
         try {
-            DB::transaction(function () use ($data, $job, &$storedPaths): void {
+            DB::transaction(function () use ($data, $job, $disk, &$storedPaths): void {
                 // Recheck under a lock: a form opened earlier may now be closed.
                 $openJob = Job::query()->whereKey($job->id)->where('status', 'open')->lockForUpdate()->firstOrFail();
 
@@ -57,7 +59,7 @@ class JobApplicationController extends Controller
                 $resumePath = $directory.'/'.$resumeName;
                 $storedPaths[] = $resumePath;
 
-                if ($resume->storeAs($directory, $resumeName, ['disk' => 'local', 'visibility' => 'private']) === false) {
+                if ($disk->putFileAs($directory, $resume, $resumeName, ['visibility' => 'private']) === false) {
                     throw new RuntimeException('CV tidak dapat disimpan.');
                 }
 
@@ -75,7 +77,7 @@ class JobApplicationController extends Controller
                     $coverPath = $directory.'/'.Str::uuid().'.txt';
                     $storedPaths[] = $coverPath;
 
-                    if (! Storage::disk('local')->put($coverPath, $coverLetter, ['visibility' => 'private'])) {
+                    if (! $disk->put($coverPath, $coverLetter, ['visibility' => 'private'])) {
                         throw new RuntimeException('Cover letter tidak dapat disimpan.');
                     }
 
@@ -102,7 +104,18 @@ class JobApplicationController extends Controller
             });
         } catch (Throwable $exception) {
             if ($storedPaths !== []) {
-                Storage::disk('local')->delete($storedPaths);
+                try {
+                    if (! $disk->delete($storedPaths)) {
+                        report(new RuntimeException('Dokumen lamaran yang gagal tidak dapat dibersihkan.'));
+                    }
+                } catch (Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            if ($exception instanceof FilesystemException) {
+                report($exception);
+                abort(503, 'Penyimpanan dokumen sedang tidak tersedia. Silakan coba lagi.');
             }
 
             throw $exception;

@@ -3,9 +3,17 @@
 use App\Models\Application;
 use App\Models\ApplicationDocument;
 use App\Models\User;
+use Aws\Command;
+use Aws\MockHandler;
+use Aws\Result;
+use Aws\S3\Exception\S3Exception;
 use Filament\Facades\Filament;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Utils;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\UnableToReadFile;
 
 uses(RefreshDatabase::class);
 
@@ -20,13 +28,13 @@ function privateApplicationDocument(Application $application, string $content = 
         'application_id' => $application->id,
         'file_path' => "applications/{$application->company_id}/{$application->id}/resume.pdf",
     ]);
-    Storage::disk('local')->put($document->file_path, $content);
+    Storage::disk('r2')->put($document->file_path, $content);
 
     return $document;
 }
 
 test('company members may download private application documents', function (string $role) {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => $role]);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $document = privateApplicationDocument($application);
@@ -42,7 +50,7 @@ test('company members may download private application documents', function (str
 })->with(['admin', 'hr', 'interviewer', 'viewer']);
 
 test('PDF documents may be previewed inline after authentication', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $document = privateApplicationDocument($application);
@@ -57,7 +65,7 @@ test('PDF documents may be previewed inline after authentication', function () {
 });
 
 test('non PDF content cannot be previewed even with PDF metadata', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $document = privateApplicationDocument($application, '<html><script>alert(1)</script></html>');
@@ -68,7 +76,7 @@ test('non PDF content cannot be previewed even with PDF metadata', function () {
 });
 
 test('DOCX files can be downloaded without sending them to an external preview service', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $document = privateApplicationDocument($application, 'private DOCX content');
@@ -80,7 +88,7 @@ test('DOCX files can be downloaded without sending them to an external preview s
 });
 
 test('another company application documents cannot be read', function (bool $preview) {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create();
     $document = privateApplicationDocument($application);
@@ -91,7 +99,7 @@ test('another company application documents cannot be read', function (bool $pre
 })->with([false, true]);
 
 test('a document from another application cannot be substituted into an authorized URL', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $own = Application::factory()->create(['company_id' => $user->company_id]);
     $other = Application::factory()->create(['company_id' => $user->company_id]);
@@ -103,7 +111,7 @@ test('a document from another application cannot be substituted into an authoriz
 });
 
 test('applications with cross company candidate or job links cannot expose documents', function (string $foreignKey) {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $other = Application::factory()->create();
     $application = Application::factory()->create(['company_id' => $user->company_id, $foreignKey => $other->{$foreignKey}]);
@@ -115,11 +123,11 @@ test('applications with cross company candidate or job links cannot expose docum
 })->with(['candidate_id', 'job_id']);
 
 test('missing document files return not found', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $document = privateApplicationDocument($application);
-    Storage::disk('local')->delete($document->file_path);
+    Storage::disk('r2')->delete($document->file_path);
 
     $this->actingAs($user)->get(route('filament.admin.application-documents.show', [
         'application' => $application, 'document' => $document,
@@ -127,7 +135,7 @@ test('missing document files return not found', function () {
 });
 
 test('document paths cannot escape their application private directory', function (bool $useTraversal) {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $other = Application::factory()->create(['company_id' => $user->company_id]);
@@ -143,7 +151,7 @@ test('document paths cannot escape their application private directory', functio
 })->with([false, true]);
 
 test('unauthenticated document requests redirect to panel login', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $application = Application::factory()->create();
     $document = privateApplicationDocument($application);
 
@@ -153,7 +161,7 @@ test('unauthenticated document requests redirect to panel login', function () {
 });
 
 test('an unknown role cannot read private documents', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'unknown']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $document = privateApplicationDocument($application);
@@ -164,7 +172,7 @@ test('an unknown role cannot read private documents', function () {
 });
 
 test('document routes preserve the panel production access restriction', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $document = privateApplicationDocument($application);
@@ -176,17 +184,98 @@ test('document routes preserve the panel production access restriction', functio
 });
 
 test('symlinks cannot expose files from another application directory', function () {
-    Storage::fake('local');
+    Storage::fake('r2');
     $user = User::factory()->create(['role' => 'admin']);
     $application = Application::factory()->create(['company_id' => $user->company_id]);
     $other = Application::factory()->create(['company_id' => $user->company_id]);
     $target = privateApplicationDocument($other);
     $document = privateApplicationDocument($application);
     $linkPath = "applications/{$user->company_id}/{$application->id}/linked.pdf";
-    symlink(Storage::disk('local')->path($target->file_path), Storage::disk('local')->path($linkPath));
+    symlink(Storage::disk('r2')->path($target->file_path), Storage::disk('r2')->path($linkPath));
     $document->update(['file_path' => $linkPath]);
 
     $this->actingAs($user)->get(route('filament.admin.application-documents.show', [
         'application' => $application, 'document' => $document,
     ]))->assertNotFound();
+});
+
+test('R2 objects are streamed in full for authenticated downloads and PDF previews', function (bool $preview) {
+    $user = User::factory()->create(['role' => 'admin']);
+    $application = Application::factory()->create(['company_id' => $user->company_id]);
+    $document = ApplicationDocument::factory()->create([
+        'application_id' => $application->id,
+        'file_path' => "applications/{$application->company_id}/{$application->id}/resume.pdf",
+    ]);
+    $content = "%PDF-1.7\n".str_repeat('document content ', 1000)."\n%%EOF";
+    $handler = new MockHandler([
+        new Result,
+        new Result(['Body' => Utils::streamFor($content)]),
+    ]);
+    Storage::set('r2', Storage::build([
+        ...config('filesystems.disks.r2'),
+        'key' => 'test-key',
+        'secret' => 'test-secret',
+        'bucket' => 'test-documents',
+        'endpoint' => 'https://test-account.r2.cloudflarestorage.com',
+        'handler' => $handler,
+    ]));
+
+    $response = $this->actingAs($user)->get(route('filament.admin.application-documents.show', [
+        'application' => $application, 'document' => $document, 'preview' => (int) $preview,
+    ]));
+
+    $response->assertOk()->assertStreamedContent($content)
+        ->assertHeader('Content-Type', $preview ? 'application/pdf' : 'application/octet-stream')
+        ->assertHeader('X-Content-Type-Options', 'nosniff');
+    expect($response->headers->get('Content-Disposition'))->toStartWith($preview ? 'inline;' : 'attachment;');
+    expect($response->headers->get('Cache-Control'))->toContain('no-store');
+    expect($handler->getLastCommand()->getName())->toBe('GetObject');
+    expect($handler->getLastCommand()['Key'])->toBe($document->file_path);
+    expect($handler->getLastRequest()->hasHeader('x-amz-checksum-mode'))->toBeFalse();
+    expect($handler->count())->toBe(0);
+})->with([false, true]);
+
+test('a missing R2 object returns not found without exposing storage details', function () {
+    $user = User::factory()->create(['role' => 'admin']);
+    $application = Application::factory()->create(['company_id' => $user->company_id]);
+    $document = ApplicationDocument::factory()->create([
+        'application_id' => $application->id,
+        'file_path' => "applications/{$application->company_id}/{$application->id}/resume.pdf",
+    ]);
+    $handler = new MockHandler([
+        new S3Exception('Missing object', new Command('HeadObject'), ['code' => 'NotFound', 'response' => new Response(404)]),
+    ]);
+    Storage::set('r2', Storage::build([
+        ...config('filesystems.disks.r2'),
+        'key' => 'test-key',
+        'secret' => 'test-secret',
+        'bucket' => 'test-documents',
+        'endpoint' => 'https://test-account.r2.cloudflarestorage.com',
+        'handler' => $handler,
+    ]));
+
+    $this->actingAs($user)->get(route('filament.admin.application-documents.show', [
+        'application' => $application, 'document' => $document,
+    ]))->assertNotFound();
+
+    expect($handler->getLastCommand()->getName())->toBe('HeadObject');
+    expect($handler->count())->toBe(0);
+});
+
+test('a failed R2 read returns service unavailable instead of a successful empty document', function () {
+    $disk = Storage::fake('r2');
+    $user = User::factory()->create(['role' => 'admin']);
+    $application = Application::factory()->create(['company_id' => $user->company_id]);
+    $document = privateApplicationDocument($application);
+    $storage = Mockery::mock($disk);
+    $storage->shouldReceive('readStream')->once()->andThrow(UnableToReadFile::fromLocation($document->file_path));
+    Storage::set('r2', $storage);
+    Exceptions::fake();
+
+    $this->actingAs($user)->get(route('filament.admin.application-documents.show', [
+        'application' => $application, 'document' => $document,
+    ]))->assertServiceUnavailable();
+
+    Exceptions::assertReported(UnableToReadFile::class);
+    $disk->assertExists($document->file_path);
 });

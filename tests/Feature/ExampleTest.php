@@ -8,7 +8,8 @@ test('the application returns a successful response', function () {
     $response->assertOk()
         ->assertViewIs('home')
         ->assertSee('href="'.route('home').'"', false)
-        ->assertDontSee('About / Tim Kami');
+        ->assertSee('href="'.route('about').'"', false)
+        ->assertSee('About / Tim Kami');
 });
 
 test('the home page shows about links when the about route is available', function () {
