@@ -111,7 +111,7 @@ jobs:
     name: Deploy dev VPS
     needs: ci
     if: >-
-      github.ref == 'refs/heads/develop' &&
+      github.ref == 'refs/heads/dev' &&
       github.event_name != 'pull_request' &&
       vars.DEV_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-24.04
