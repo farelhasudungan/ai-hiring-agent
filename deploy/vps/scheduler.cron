@@ -1,0 +1,1 @@
+* * * * * deploy cd /var/www/ai-hiring-dev/current && /usr/bin/php8.4 artisan schedule:run >> /var/www/ai-hiring-dev/shared/storage/logs/scheduler.log 2>&1

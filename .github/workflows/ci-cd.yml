@@ -1,0 +1,139 @@
+name: CI and dev deployment
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never cancel a deployment while it is changing the server. GitHub keeps only
+# the newest pending run for a branch while the current run finishes.
+concurrency:
+  group: ci-cd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: Test and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ai_hiring_test
+          POSTGRES_USER: ai_hiring
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ai_hiring -d ai_hiring_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_DATABASE: ai_hiring_test
+      DB_USERNAME: ai_hiring
+      DB_PASSWORD: ci-only-password
+      DB_URL: ''
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Check deployment scripts and recovery behavior
+        run: |
+          bash -n deploy/vps/package.sh deploy/vps/upload.sh deploy/vps/deploy.sh
+          python3 deploy/vps/tests/deploy_test.py
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: curl, dom, fileinfo, intl, mbstring, pdo_pgsql, pdo_sqlite, xml, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate and install PHP dependencies
+        run: |
+          composer validate --strict --no-check-publish
+          composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          php artisan migrate --force --no-interaction
+
+      - name: Check PHP formatting
+        run: vendor/bin/pint --test
+
+      # Environment variables above override phpunit.xml's local SQLite defaults.
+      - name: Run tests against PostgreSQL
+        run: composer test
+
+      - name: Package deployable release
+        if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+        run: bash deploy/vps/package.sh "$RUNNER_TEMP/release.tar.gz"
+
+      - name: Upload release
+        if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dev-release
+          path: ${{ runner.temp }}/release.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy dev VPS
+    needs: ci
+    if: >-
+      github.ref == 'refs/heads/develop' &&
+      github.event_name != 'pull_request' &&
+      vars.DEV_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: development
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dev-release
+          path: ${{ runner.temp }}/dev-release
+
+      - name: Upload and activate release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEV_SSH_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEV_SSH_PORT || '22' }}
+          DEPLOY_USER: ${{ secrets.DEV_SSH_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEV_SSH_KNOWN_HOSTS }}
+          DEPLOY_HEALTH_URL: ${{ vars.DEV_HEALTH_URL }}
+          RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash deploy/vps/upload.sh "$RUNNER_TEMP/dev-release/release.tar.gz"
