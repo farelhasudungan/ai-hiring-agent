@@ -33,8 +33,9 @@ class ApplicationDocumentController extends Controller
         if ($disk->getAdapter() instanceof LocalFilesystemAdapter) {
             $path = realpath($disk->path($document->file_path));
             $root = realpath($disk->path(''));
+            $directoryPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $directory);
             abort_unless($path !== false && $root !== false && is_file($path)
-                && str_starts_with($path, $root.DIRECTORY_SEPARATOR.$directory), 404);
+                && str_starts_with($path, $root.DIRECTORY_SEPARATOR.$directoryPath), 404);
         }
 
         try {

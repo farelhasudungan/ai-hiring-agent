@@ -191,7 +191,15 @@ test('symlinks cannot expose files from another application directory', function
     $target = privateApplicationDocument($other);
     $document = privateApplicationDocument($application);
     $linkPath = "applications/{$user->company_id}/{$application->id}/linked.pdf";
-    symlink(Storage::disk('r2')->path($target->file_path), Storage::disk('r2')->path($linkPath));
+    try {
+        $created = symlink(Storage::disk('r2')->path($target->file_path), Storage::disk('r2')->path($linkPath));
+    } catch (Throwable) {
+        $this->markTestSkipped('This Windows environment does not permit creating symbolic links.');
+    }
+
+    if (! $created) {
+        $this->markTestSkipped('This Windows environment does not permit creating symbolic links.');
+    }
     $document->update(['file_path' => $linkPath]);
 
     $this->actingAs($user)->get(route('filament.admin.application-documents.show', [
