@@ -7,16 +7,28 @@ use App\Models\HiringRecommendationAgent;
 use App\Models\ResumeParserAgent;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use LogicException;
 
 class AgenticChatSeeder extends Seeder
 {
     /** Seed agentic chat demo data without duplicating the demo sessions. */
     public function run(): void
     {
-        $user = User::query()->first() ?? User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if (! app()->environment(['local', 'testing'])) {
+            throw new LogicException('Agentic chat demo data can only be seeded in local or testing environments.');
+        }
+
+        $demoUserEmail = config('agentic-chat.demo_user_email');
+
+        if (! is_string($demoUserEmail) || filter_var($demoUserEmail, FILTER_VALIDATE_EMAIL) === false) {
+            throw new LogicException('Set AGENTIC_CHAT_DEMO_USER_EMAIL to a valid local demo account email.');
+        }
+
+        $user = User::query()->where('email', $demoUserEmail)->first()
+            ?? User::factory()->create([
+                'name' => 'Agentic Chat Demo User',
+                'email' => $demoUserEmail,
+            ]);
 
         // Create agent instances
         $resumeParser = ResumeParserAgent::query()->firstOrCreate(
@@ -131,7 +143,7 @@ class AgenticChatSeeder extends Seeder
             $msg6->toolExecutionLogs()->create([
                 'loggable_type' => 'candidate_scoring',
                 'loggable_id' => $candidateScorer->id,
-                'tool_name' => 'batch_compare',
+                'tool_name' => 'compare_candidates',
                 'input' => [
                     'job_title' => 'Backend Engineer',
                     'candidate_ids' => [1, 2, 3, 4, 5],
@@ -196,9 +208,9 @@ class AgenticChatSeeder extends Seeder
             ]);
 
             $msg9->toolExecutionLogs()->create([
-                'loggable_type' => 'resume_parser',
-                'loggable_id' => $resumeParser->id,
-                'tool_name' => 'fetch_calendar',
+                'loggable_type' => 'hiring_recommendation',
+                'loggable_id' => $hiringRecommender->id,
+                'tool_name' => 'schedule_interview',
                 'input' => ['date_range' => '2026-11-10 to 2026-11-14'],
                 'result' => null,
                 'status' => 'failed',

@@ -15,6 +15,9 @@ class ChatMessage extends Model
     /** @use HasFactory<ChatMessageFactory> */
     use HasFactory;
 
+    /** @var list<string> */
+    protected $touches = ['chatSession'];
+
     public function chatSession(): BelongsTo
     {
         return $this->belongsTo(ChatSession::class);

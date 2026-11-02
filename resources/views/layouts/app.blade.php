@@ -32,6 +32,9 @@
             <div id="main-navigation" class="hidden w-full flex-col gap-1 md:flex md:w-auto md:flex-row md:items-center md:gap-6">
                 <a href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm transition-colors hover:bg-surface md:py-2">Project</a>
                 <a href="{{ route('about') }}" @if(request()->routeIs('about')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm text-body transition-colors hover:bg-surface hover:text-ink md:py-2">About</a>
+                @auth
+                    <a href="{{ route('agentic-chat.sessions.index') }}" @if(request()->routeIs('agentic-chat.*')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm text-body transition-colors hover:bg-surface hover:text-ink md:py-2">Agentic Chat</a>
+                @endauth
             </div>
         </nav>
     </header>

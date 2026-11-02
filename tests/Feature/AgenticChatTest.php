@@ -8,6 +8,7 @@ use App\Models\ResumeParserAgent;
 use App\Models\ToolExecutionLog;
 use App\Models\User;
 use Database\Seeders\AgenticChatSeeder;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -192,6 +193,24 @@ test('authenticated user can access own chat sessions', function () {
         ->assertOk();
 });
 
+test('authenticated navigation links to agentic chat', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('home'))
+        ->assertOk()
+        ->assertSee('Agentic Chat')
+        ->assertSee(route('agentic-chat.sessions.index'), false);
+});
+
+test('naive chat history route is not available outside local', function () {
+    $this->app['env'] = 'production';
+    $user = User::factory()->create();
+    $session = ChatSession::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($user)
+        ->get(route('agentic-chat.sessions.show-naive', $session->id))
+        ->assertNotFound();
+});
+
 test('unauthenticated users are redirected from chat sessions', function () {
     $this->get(route('agentic-chat.sessions.index'))
         ->assertRedirect(route('filament.admin.auth.login'));
@@ -199,60 +218,66 @@ test('unauthenticated users are redirected from chat sessions', function () {
 
 // ── Eager loading prevents N+1 ──────────────────────────────────────
 
-test('eager loading keeps query count stable as message and log counts grow', function () {
+test('chat detail controller keeps eager loaded query count bounded and naive route demonstrates N plus one', function () {
     $user = User::factory()->create();
-    $agent = ResumeParserAgent::factory()->create();
+    $resumeParser = ResumeParserAgent::factory()->create();
+    $candidateScorer = CandidateScoringAgent::factory()->create();
+    $hiringRecommender = HiringRecommendationAgent::factory()->create();
+    $agents = [
+        'resumeParser' => $resumeParser,
+        'candidateScoring' => $candidateScorer,
+        'hiringRecommendation' => $hiringRecommender,
+    ];
+    $states = array_keys($agents);
 
-    // Create a small session with few messages
-    $smallSession = ChatSession::factory()->create(['user_id' => $user->id]);
-    ChatMessage::factory()->count(3)->create(['chat_session_id' => $smallSession->id])
-        ->each(function ($message) use ($agent) {
-            ToolExecutionLog::factory()->create([
-                'chat_message_id' => $message->id,
-                'loggable_type' => 'resume_parser',
-                'loggable_id' => $agent->id,
-            ]);
-        });
+    $createHistory = function (int $messageCount, int $logsPerMessage) use ($user, $agents, $states): ChatSession {
+        $session = ChatSession::factory()->create(['user_id' => $user->id]);
 
-    // Create a larger session with more messages
-    $largeSession = ChatSession::factory()->create(['user_id' => $user->id]);
-    ChatMessage::factory()->count(10)->create(['chat_session_id' => $largeSession->id])
-        ->each(function ($message) use ($agent) {
-            ToolExecutionLog::factory()->count(2)->create([
-                'chat_message_id' => $message->id,
-                'loggable_type' => 'resume_parser',
-                'loggable_id' => $agent->id,
-            ]);
-        });
+        for ($messageIndex = 0; $messageIndex < $messageCount; $messageIndex++) {
+            $message = ChatMessage::factory()->create(['chat_session_id' => $session->id]);
 
-    DB::connection()->enableQueryLog();
-    DB::flushQueryLog();
+            for ($logIndex = 0; $logIndex < $logsPerMessage; $logIndex++) {
+                $state = $states[($messageIndex + $logIndex) % count($states)];
+                ToolExecutionLog::factory()->{$state}()->create([
+                    'chat_message_id' => $message->id,
+                    'loggable_id' => $agents[$state]->id,
+                ]);
+            }
+        }
 
-    ChatSession::query()
-        ->whereBelongsTo($user)
-        ->with([
-            'messages' => fn ($query) => $query->orderBy('created_at')->orderBy('id'),
-            'messages.toolExecutionLogs.loggable',
-        ])
-        ->findOrFail($smallSession->id);
+        return $session;
+    };
 
-    $smallQueries = count(DB::getQueryLog());
-    DB::flushQueryLog();
+    $smallSession = $createHistory(3, 1);
+    $largeSession = $createHistory(18, 3);
+    $queries = [];
 
-    ChatSession::query()
-        ->whereBelongsTo($user)
-        ->with([
-            'messages' => fn ($query) => $query->orderBy('created_at')->orderBy('id'),
-            'messages.toolExecutionLogs.loggable',
-        ])
-        ->findOrFail($largeSession->id);
+    DB::listen(function (QueryExecuted $event) use (&$queries): void {
+        $queries[] = $event->sql;
+    });
 
-    $largeQueries = count(DB::getQueryLog());
-    DB::disableQueryLog();
+    $testCase = $this;
+    $measureRoute = function (string $routeName, ChatSession $session) use (&$queries, $testCase, $user): int {
+        $queryOffset = count($queries);
 
-    // With eager loading, query count should be approximately the same
-    // regardless of data size (bounded by number of relationship levels, not row count)
-    expect($largeQueries)->toBeLessThanOrEqual($smallQueries + 2);
+        $testCase->actingAs($user)
+            ->get(route($routeName, $session->id))
+            ->assertOk();
+
+        return count($queries) - $queryOffset;
+    };
+
+    $this->app['env'] = 'local';
+
+    $smallEagerQueries = $measureRoute('agentic-chat.sessions.show', $smallSession);
+    $largeEagerQueries = $measureRoute('agentic-chat.sessions.show', $largeSession);
+    $smallNaiveQueries = $measureRoute('agentic-chat.sessions.show-naive', $smallSession);
+    $largeNaiveQueries = $measureRoute('agentic-chat.sessions.show-naive', $largeSession);
+
+    expect($largeEagerQueries)->toBeLessThanOrEqual($smallEagerQueries + 4);
+    expect($smallNaiveQueries)->toBeGreaterThan($smallEagerQueries);
+    expect($largeNaiveQueries)->toBeGreaterThan($smallNaiveQueries);
+    expect($largeNaiveQueries - $smallNaiveQueries)->toBeGreaterThan($largeEagerQueries - $smallEagerQueries);
 });
 
 // ── Factories and seeders generate valid data ───────────────────────
@@ -281,6 +306,38 @@ test('tool execution log factory creates valid relational data', function () {
     expect($log->loggable)->not->toBeNull();
     expect($log->input)->toBeArray();
     expect($log->status)->toBeString();
+});
+
+test('tool execution log factory default state matches its resume parser tool', function () {
+    $log = ToolExecutionLog::factory()->create();
+
+    expect($log->loggable_type)->toBe('resume_parser');
+    expect($log->tool_name)->toBe('parse_resume');
+    expect($log->loggable)->toBeInstanceOf(ResumeParserAgent::class);
+});
+
+test('tool execution log factory states match their polymorphic agents and tools', function (string $state, string $type, string $toolName, string $agentClass) {
+    $log = ToolExecutionLog::factory()->{$state}()->create();
+
+    expect($log->loggable_type)->toBe($type);
+    expect($log->tool_name)->toBe($toolName);
+    expect($log->loggable)->toBeInstanceOf($agentClass);
+})->with([
+    'resume parser' => ['resumeParser', 'resume_parser', 'parse_resume', ResumeParserAgent::class],
+    'candidate scoring' => ['candidateScoring', 'candidate_scoring', 'score_candidate', CandidateScoringAgent::class],
+    'hiring recommendation' => ['hiringRecommendation', 'hiring_recommendation', 'generate_shortlist', HiringRecommendationAgent::class],
+]);
+
+test('creating a chat message touches its chat session timestamp', function () {
+    $session = ChatSession::factory()->create();
+    DB::table('chat_sessions')
+        ->where('id', $session->id)
+        ->update(['updated_at' => now()->subDay()]);
+    $previousUpdatedAt = $session->fresh()->updated_at;
+
+    ChatMessage::factory()->create(['chat_session_id' => $session->id]);
+
+    expect($session->fresh()->updated_at)->toBeGreaterThan($previousUpdatedAt);
 });
 
 test('chat message factory states produce correct roles', function () {
@@ -313,22 +370,66 @@ test('tool execution log duration is cast to integer', function () {
 });
 
 test('seeder runs without errors', function () {
+    $configuredEmail = 'agentic-chat-demo@example.test';
+    config(['agentic-chat.demo_user_email' => $configuredEmail]);
+    $unrelatedUser = User::factory()->create();
+
     $this->seed(AgenticChatSeeder::class);
 
+    $demoUser = User::query()->where('email', $configuredEmail)->firstOrFail();
+
+    expect(ChatSession::query()->where('user_id', $demoUser->id)->count())->toBe(2);
+    expect(ChatSession::query()->where('user_id', $unrelatedUser->id)->exists())->toBeFalse();
     expect(ChatSession::query()->count())->toBeGreaterThanOrEqual(2);
     expect(ChatMessage::query()->count())->toBeGreaterThanOrEqual(4);
     expect(ToolExecutionLog::query()->count())->toBeGreaterThanOrEqual(3);
     expect(ResumeParserAgent::query()->count())->toBeGreaterThanOrEqual(1);
     expect(CandidateScoringAgent::query()->count())->toBeGreaterThanOrEqual(1);
     expect(HiringRecommendationAgent::query()->count())->toBeGreaterThanOrEqual(1);
+
+    $expectedTypes = [
+        'parse_resume' => 'resume_parser',
+        'score_candidate' => 'candidate_scoring',
+        'compare_candidates' => 'candidate_scoring',
+        'generate_shortlist' => 'hiring_recommendation',
+        'schedule_interview' => 'hiring_recommendation',
+    ];
+
+    expect(ToolExecutionLog::query()->get()->every(
+        fn (ToolExecutionLog $log): bool => ($expectedTypes[$log->tool_name] ?? null) === $log->loggable_type,
+    ))->toBeTrue();
 });
 
 test('seeder is idempotent', function () {
     $this->seed(AgenticChatSeeder::class);
-    $firstCount = ChatSession::query()->count();
+    $firstRunCounts = [
+        User::query()->count(),
+        ChatSession::query()->count(),
+        ChatMessage::query()->count(),
+        ToolExecutionLog::query()->count(),
+        ResumeParserAgent::query()->count(),
+        CandidateScoringAgent::query()->count(),
+        HiringRecommendationAgent::query()->count(),
+    ];
 
     $this->seed(AgenticChatSeeder::class);
-    $secondCount = ChatSession::query()->count();
+    $secondRunCounts = [
+        User::query()->count(),
+        ChatSession::query()->count(),
+        ChatMessage::query()->count(),
+        ToolExecutionLog::query()->count(),
+        ResumeParserAgent::query()->count(),
+        CandidateScoringAgent::query()->count(),
+        HiringRecommendationAgent::query()->count(),
+    ];
 
-    expect($secondCount)->toBe($firstCount);
+    expect($secondRunCounts)->toBe($firstRunCounts);
+});
+
+test('agentic chat seeder refuses to create demo accounts outside local and testing', function () {
+    $this->app['env'] = 'production';
+
+    expect(fn () => $this->seed(AgenticChatSeeder::class))
+        ->toThrow(LogicException::class);
+    expect(User::query()->count())->toBe(0);
 });
