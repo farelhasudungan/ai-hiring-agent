@@ -6,6 +6,10 @@ archive=${1:?Usage: package.sh /absolute/path/release.tar.gz}
 
 build_dir=$(mktemp -d)
 trap 'rm -rf -- "$build_dir"' EXIT
+# mktemp creates 0700; tar records that mode for the "." entry and extraction
+# would restore it on the server, leaving the release unreadable by nginx and
+# PHP-FPM.
+chmod 0755 "$build_dir"
 
 # Use committed source, never the CI .env, cached configuration, or local files.
 git archive HEAD | tar -x -C "$build_dir"

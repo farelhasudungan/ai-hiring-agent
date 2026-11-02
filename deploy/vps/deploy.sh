@@ -50,6 +50,10 @@ mkdir -p "$release" "$shared/storage/app/public" "$shared/storage/app/private" \
     "$shared/storage/framework/views" "$shared/storage/logs"
 tar -xzf "$archive" -C "$release"
 chgrp -R www-data "$release"
+# The artifact's top-level entry carries the build directory's mode. Restore a
+# traversable release root and normalize modes for the shared www-data group.
+chmod 2750 "$release"
+chmod -R g+rX,o-rwx "$release"
 chmod -R g+rwX "$release/bootstrap/cache"
 # The artifact contains only the repository's empty storage skeleton.
 rm -rf -- "$release/storage"

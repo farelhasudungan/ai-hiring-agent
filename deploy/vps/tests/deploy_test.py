@@ -94,6 +94,10 @@ class DeploymentTest(unittest.TestCase):
                     self.assertEqual((release / "storage").resolve(), base / "shared/storage")
                     self.assertEqual((release / ".env").resolve(), base / "shared/.env")
                     self.assertFalse(archive.exists())
+                    # nginx and PHP-FPM run as a non-owner: the release root must
+                    # stay traversable by the shared group, whoever built the
+                    # artifact's top-level entry.
+                    self.assertEqual(release.stat().st_mode & 0o7777, 0o2750)
 
 
 if __name__ == "__main__":
