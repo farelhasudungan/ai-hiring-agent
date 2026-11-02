@@ -94,12 +94,23 @@ jobs:
       - name: Run tests against PostgreSQL
         run: composer test
 
+      - name: Explain deployment status
+        if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request'
+        env:
+          DEV_DEPLOY_ENABLED: ${{ vars.DEV_DEPLOY_ENABLED }}
+        run: |
+          if [[ "$DEV_DEPLOY_ENABLED" != 'true' ]]; then
+            message='Deployment skipped: set repository Actions variable DEV_DEPLOY_ENABLED to true under Settings > Secrets and variables > Actions > Variables. An environment variable or secret does not satisfy the job condition.'
+            printf '::notice::%s\n' "$message"
+            printf '%s\n' "$message" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Package deployable release
-        if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request'
         run: bash deploy/vps/package.sh "$RUNNER_TEMP/release.tar.gz"
 
       - name: Upload release
-        if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: dev-release

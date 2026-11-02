@@ -1,12 +1,12 @@
 # Dev VPS and CI/CD
 
 This setup targets Ubuntu 24.04, Nginx, PHP 8.4-FPM, PostgreSQL 16, and
-GitHub Actions. The deployment branch is `develop`; `main` is not deployed.
-Change both branch conditions in `.github/workflows/ci-cd.yml` if needed.
+GitHub Actions. The deployment branch is `dev`; `main` is not deployed.
+Keep all branch conditions in `.github/workflows/ci-cd.yml` consistent if changed.
 
 Every push and pull request runs Composer validation, Pint, migrations and Pest
 against a disposable PostgreSQL 16 database, and a Vite build using Node 24.
-Successful `develop` pushes package the committed application, runtime PHP
+Successful `dev` pushes package the committed application, runtime PHP
 dependencies, and compiled assets. When enabled, the deployment job transfers
 that artifact over SSH and activates it on the VPS. Node, Composer, and a GitHub
 repository key are not needed on the server.
@@ -248,7 +248,7 @@ For a custom SSH port, use the same port for scanning, testing, and GitHub.
 ## 6. Configure GitHub Actions
 
 Create a GitHub environment named `development` under repository **Settings →
-Environments**, and restrict its deployment branches to `develop`.
+Environments**, and restrict its deployment branches to `dev`.
 [Environment availability depends on repository visibility and GitHub plan](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
 If your private repository's plan does not support environments, remove
 `environment: development` from the workflow and use repository secrets and
@@ -278,6 +278,15 @@ server is ready. It must be a repository variable because the job's condition
 is evaluated before environment variables are loaded. Leave it absent or set to
 `false` to run CI without deployment.
 
+Create this variable under **Settings → Secrets and variables → Actions →
+Variables → New repository variable**, with name `DEV_DEPLOY_ENABLED` and value
+`true` (lowercase, without quotes). A secret with this name, or a variable only
+under the `development` environment, does not satisfy the deploy job's condition.
+On `dev` pushes, CI's **Explain deployment status** step reports when this gate
+is disabled. A failed CI job also prevents deployment. After changing the
+workflow, commit and push to `dev` to run the updated version; rerunning an old
+run uses its original workflow revision.
+
 Application/database secrets belong only in the VPS `.env`, not the artifact or
 GitHub build environment. Only the deploy job receives SSH secrets. Pull requests
 run checks without deployment access.
@@ -285,9 +294,9 @@ run checks without deployment access.
 ## 7. First deployment and background processes
 
 Commit and push the setup to your chosen branch using your normal review flow.
-Merge it into `develop` (create that branch if it does not exist). A successful
-push to `develop` deploys automatically when enabled. You can also select
-`develop` in **Actions → CI and dev deployment → Run workflow**.
+Merge it into `dev` (create that branch if it does not exist). A successful
+push to `dev` deploys automatically when enabled. You can also select
+`dev` in **Actions → CI and dev deployment → Run workflow**.
 
 After the first successful deployment, install the worker and scheduler on the VPS:
 
