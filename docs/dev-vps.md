@@ -316,6 +316,167 @@ The worker uses a 60-second timeout, below the queue's 90-second reservation
 timeout. Adjust both together for longer AI jobs. Supervisor restarts workers
 after deployments; cron invokes the scheduler once per minute.
 
+If the deployment job or the final `curl` fails, continue with step 8.
+
+## 8. Troubleshoot the first deployment
+
+Work through these checks in order. Each one names the exact message you will
+see. After fixing the cause, open the failed run under **Actions** and choose
+**Re-run failed jobs**; do not start a new push for every attempt.
+
+Start with the four logs that explain almost every failure:
+
+```bash
+sudo tail -n 30 /var/log/nginx/error.log
+sudo journalctl -u php8.4-fpm --no-pager -n 30
+sudo tail -n 30 /var/www/ai-hiring-dev/shared/storage/logs/laravel.log
+sudo tail -n 30 /var/www/ai-hiring-dev/shared/storage/logs/worker.log
+```
+
+### 8.1 The job stops before any SSH output
+
+Messages such as these come from `deploy/vps/upload.sh`, which validates every
+input before connecting:
+
+```text
+upload.sh: line 5: DEPLOY_HOST: Set DEV_SSH_HOST
+upload.sh: line 7: DEPLOY_SSH_KEY: Set DEV_SSH_PRIVATE_KEY
+upload.sh: line 8: DEPLOY_KNOWN_HOSTS: Set DEV_SSH_KNOWN_HOSTS
+upload.sh: line 9: DEPLOY_HEALTH_URL: Set DEV_HEALTH_URL, including /up
+```
+
+A missing **or empty** value fails the same way. The deploy job declares
+`environment: development`, so these belong under **Settings → Environments →
+development**, not at repository level:
+
+| Name | Kind | Where |
+| --- | --- | --- |
+| `DEV_SSH_HOST` | Secret | environment `development` |
+| `DEV_SSH_PORT` | Secret (optional, defaults to `22`) | environment `development` |
+| `DEV_SSH_USER` | Secret | environment `development` |
+| `DEV_SSH_PRIVATE_KEY` | Secret | environment `development` |
+| `DEV_SSH_KNOWN_HOSTS` | Secret | environment `development` |
+| `DEV_HEALTH_URL` | Variable | environment `development` |
+
+`DEV_DEPLOY_ENABLED` is the single exception: it is a **repository** variable,
+as described in step 6. Re-run the job after saving; the values are read at the
+start of each job.
+
+### 8.2 `No ED25519 host key is known for ...`
+
+Deployment pins the host key with `StrictHostKeyChecking=yes`, so the entry must
+match the host **and** port the job uses. Scan with the same values you stored in
+`DEV_SSH_HOST` and `DEV_SSH_PORT`:
+
+```bash
+HOST=VPS_IP
+PORT=22
+ssh-keyscan -H -t ed25519 -p "$PORT" "$HOST" > /tmp/ai-hiring-dev-known-hosts
+ssh-keygen -lf /tmp/ai-hiring-dev-known-hosts
+```
+
+Compare those fingerprints with the server's own key, read through a trusted
+console:
+
+```bash
+sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+Replace `DEV_SSH_KNOWN_HOSTS` with the **entire file**, including the hashed host
+prefix and the `ssh-ed25519 ...` key. Do not paste the `SHA256:` fingerprint, add
+quotes, or trim blank lines. If the file is empty, the scan never reached the
+host. A hostname scanned as `dev.example.com` does not match a job dialing the
+same machine by IP address.
+
+### 8.3 Health check times out: `curl: (28)`
+
+```text
+curl: (28) Connection timed out after 10002 milliseconds
+```
+
+The deploy script fetches `DEV_HEALTH_URL` **from the VPS itself** after
+activating the release, so a blocked inbound port fails the deployment. Check in
+this order:
+
+1. Host firewall: `sudo ufw status` must show `Nginx Full` (ports 80 and 443).
+2. Provider firewall. On Azure, open **VM → Networking → Networking settings →
+   Create port rule → Inbound**, protocol TCP, destination port `80`, action
+   Allow, source `Any`. Repeat for `443` when using HTTPS. The rule must exist on
+   both the network interface and the subnet, and the VM needs a public IP.
+3. Listener: `sudo ss -lntp | grep -E ':80|:443'` should show Nginx.
+4. From your workstation: `curl -I --max-time 10 http://VPS_IP`.
+
+Once step 4 returns headers instead of a timeout, re-run the deployment.
+
+### 8.4 Health check returns 404
+
+```text
+curl: (22) The requested URL returned error: 404
+```
+
+A failed **first** deployment rolls back by removing `current`, because there is
+no previous release to restore. Nginx therefore keeps returning 404 until a
+deployment succeeds. Do not create the symlink by hand: fix the cause below and
+re-run.
+
+Reproduce the check manually to see which component answered:
+
+```bash
+BASE=/var/www/ai-hiring-dev
+NEWEST=$(ls -1dt "$BASE"/releases/*/ | head -1 | sed 's:/$::')
+sudo -u deploy ln -sfn "$NEWEST" "$BASE/current"
+curl -i --max-time 10 http://VPS_IP/up
+```
+
+This temporary symlink mirrors what activation does; the next deployment replaces
+it. Compare the response body:
+
+| Body | Meaning | Next step |
+| --- | --- | --- |
+| `File not found.` | Nginx reached PHP-FPM, which could not open `index.php` | See 8.5 |
+| Nginx's own page, footer `nginx/1.24.0 (Ubuntu)` | The request matched a different server block | Set `server_name` to the same IP or host as `DEV_HEALTH_URL`, then `sudo nginx -t` and `sudo systemctl reload nginx` |
+| Laravel's `404` page | The app runs, but the route is missing from the cached release | `cd /var/www/ai-hiring-dev/current && sudo -u deploy php8.4 artisan route:list --path=up`; it must list `GET\|HEAD up`, which `bootstrap/app.php` registers through `health: '/up'` |
+
+### 8.5 `Permission denied`, `Primary script unknown`, or "File not found."
+
+`/var/log/nginx/error.log` shows the release is not traversable by the web user:
+
+```text
+stat() "/var/www/ai-hiring-dev/current/public/up" failed (13: Permission denied)
+realpath() "/var/www/ai-hiring-dev/current/public" failed (13: Permission denied)
+FastCGI sent in stderr: "Primary script unknown" while reading response header
+```
+
+Nginx and PHP-FPM run as `www-data`, while releases are owned by `deploy`. Access
+must therefore flow through the shared group. Confirm it:
+
+```bash
+ls -ld /var/www/ai-hiring-dev/releases/*/ | tail -n 3
+sudo -u www-data test -r /var/www/ai-hiring-dev/current/public/index.php \
+  && echo readable
+namei -l /var/www/ai-hiring-dev/current/public/index.php
+```
+
+A release root showing `drwx------` (mode `0700`) is the fault: `chgrp` fixes the
+group, but the mode still denies the group. Repair the affected release:
+
+```bash
+NEWEST=$(ls -1dt /var/www/ai-hiring-dev/releases/*/ | head -1 | sed 's:/$::')
+sudo chgrp -R www-data "$NEWEST"
+sudo chmod 2750 "$NEWEST"
+sudo chmod -R g+rX,o-rwx "$NEWEST"
+```
+
+Cause: the packaging step built the artifact inside `mktemp -d`, which is `0700`.
+`tar` recorded that mode for the `.` entry and extraction restored it on the
+release root, so only `deploy` could enter the directory. The scripts now handle
+this: `deploy/vps/package.sh` sets the build directory to `0755`, and
+`deploy/vps/deploy.sh` normalizes the extracted release to `2750` with
+`g+rX,o-rwx` before restoring group write access to `bootstrap/cache`. CI's
+`deploy/vps/tests/deploy_test.py` asserts the root stays `2750`. Deployments made
+from an older checkout must apply both changes, or the same failure returns on
+the next release.
+
 ## Release behavior, backups, and recovery
 
 The server keeps immutable application releases in `releases/`, uploads and logs
@@ -358,9 +519,7 @@ curl --fail http://VPS_IP/up
 
 Use your actual IP or the HTTPS domain, matching `DEV_HEALTH_URL`.
 
-Troubleshooting: inspect the GitHub Actions log,
-`shared/storage/logs/laravel.log`, `shared/storage/logs/worker.log`,
-`sudo journalctl -u php8.4-fpm`, and `sudo tail /var/log/nginx/error.log`.
+For failures during setup or deployment, start from step 8.
 
 The deployment choices follow [Laravel's deployment guidance](https://laravel.com/docs/13.x/deployment).
 CI's PostgreSQL service follows [GitHub's service container guidance](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers).
