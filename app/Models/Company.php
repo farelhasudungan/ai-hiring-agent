@@ -45,4 +45,12 @@ class Company extends Model
     {
         return $this->hasMany(Application::class);
     }
+
+    /**
+     * @return HasMany<Form, $this>
+     */
+    public function forms(): HasMany
+    {
+        return $this->hasMany(Form::class);
+    }
 }

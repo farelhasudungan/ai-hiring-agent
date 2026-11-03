@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'company_id',
+    'form_id',
     'title',
     'department',
     'location',
@@ -62,5 +63,21 @@ class JobPosting extends Model
     public function aiScreenings(): HasMany
     {
         return $this->hasMany(AiScreening::class, 'job_id');
+    }
+
+    /**
+     * @return BelongsTo<Form, $this>
+     */
+    public function form(): BelongsTo
+    {
+        return $this->belongsTo(Form::class);
+    }
+
+    /**
+     * @return HasMany<FormSubmission, $this>
+     */
+    public function formSubmissions(): HasMany
+    {
+        return $this->hasMany(FormSubmission::class);
     }
 }

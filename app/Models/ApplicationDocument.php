@@ -52,4 +52,12 @@ class ApplicationDocument extends Model
     {
         return $this->hasMany(AiScreening::class, 'document_id');
     }
+
+    /**
+     * @return HasMany<FormAnswerFile, $this>
+     */
+    public function formAnswerFiles(): HasMany
+    {
+        return $this->hasMany(FormAnswerFile::class, 'application_document_id');
+    }
 }

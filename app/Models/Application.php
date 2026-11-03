@@ -106,4 +106,12 @@ class Application extends Model
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    /**
+     * @return HasMany<FormSubmission, $this>
+     */
+    public function formSubmissions(): HasMany
+    {
+        return $this->hasMany(FormSubmission::class);
+    }
 }

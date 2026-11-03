@@ -11,10 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'application_id',
     'job_id',
+    'form_submission_id',
     'document_id',
     'model_name',
     'status',
     'prompt_text',
+    'input_snapshot',
     'raw_response',
     'parsed_response',
     'match_score',
@@ -44,6 +46,7 @@ class AiScreening extends Model
     protected function casts(): array
     {
         return [
+            'input_snapshot' => 'array',
             'parsed_response' => 'array',
             'match_score' => 'integer',
             'candidate_skills' => 'array',
@@ -79,5 +82,13 @@ class AiScreening extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(ApplicationDocument::class, 'document_id');
+    }
+
+    /**
+     * @return BelongsTo<FormSubmission, $this>
+     */
+    public function formSubmission(): BelongsTo
+    {
+        return $this->belongsTo(FormSubmission::class);
     }
 }

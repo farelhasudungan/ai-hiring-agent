@@ -22,10 +22,12 @@ class AiScreeningFactory extends Factory
         return [
             'application_id' => Application::factory(),
             'job_id' => JobPosting::factory(),
+            'form_submission_id' => null,
             'document_id' => null,
             'model_name' => 'qwen2.5:7b',
             'status' => 'queued',
             'prompt_text' => fake()->paragraphs(2, true),
+            'input_snapshot' => null,
             'raw_response' => null,
             'parsed_response' => null,
             'match_score' => null,

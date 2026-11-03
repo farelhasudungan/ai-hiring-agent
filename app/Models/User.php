@@ -57,4 +57,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    /**
+     * @return HasMany<Form, $this>
+     */
+    public function createdForms(): HasMany
+    {
+        return $this->hasMany(Form::class, 'created_by');
+    }
 }
