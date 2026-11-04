@@ -12,7 +12,7 @@ class OnboardingRepository
      */
     public function createUser(array $attributes): User
     {
-        return User::create($attributes);
+        return User::query()->create($attributes);
     }
 
     public function lockUser(int $userId): User
@@ -25,7 +25,7 @@ class OnboardingRepository
      */
     public function createCompany(array $attributes): Company
     {
-        return Company::create($attributes);
+        return Company::query()->create($attributes);
     }
 
     public function assignCompany(User $user, Company $company, string $role): void
