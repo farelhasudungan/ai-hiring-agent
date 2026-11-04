@@ -4,6 +4,27 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
+    --color-canvas: #f3f0ee;
+    --color-paper: #fcfbfa;
+    --color-ink: #141413;
+    --color-muted: #696969;
+    --color-line: #d1cdc7;
+    --color-accent: #cf4500;
+    --color-orbit: #f37338;
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer base {
+    body {
+        @apply bg-canvas font-sans text-ink antialiased;
+    }
+
+    a, button, input {
+        @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent;
+    }
+
+    button, input[type='checkbox'] {
+        @apply cursor-pointer;
+    }
 }

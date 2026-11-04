@@ -36,6 +36,14 @@ class UserFactory extends Factory
         ];
     }
 
+    public function withoutCompany(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'company_id' => null,
+            'role' => 'viewer',
+        ]);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */
