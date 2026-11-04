@@ -1,4 +1,4 @@
-<x-layout title="Create your company">
+<x-dashboard-layout title="Company setup">
     <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 py-6 sm:py-12">
         <div class="flex items-center gap-3 text-sm text-muted" aria-label="Setup progress: account created, company next">
             <span class="flex size-8 items-center justify-center rounded-full bg-ink text-paper" aria-hidden="true">✓</span>
@@ -27,4 +27,4 @@
             </form>
         </section>
     </div>
-</x-layout>
+</x-dashboard-layout>
