@@ -52,7 +52,7 @@ class JobPostingController extends Controller
     {
         Gate::authorize('view', $jobPosting);
 
-        $jobPosting->load('form')->loadCount('applications');
+        $jobPosting->load('form')->loadCount(['applications', 'formSubmissions']);
 
         return view('job-postings.show', [
             'jobPosting' => $jobPosting,

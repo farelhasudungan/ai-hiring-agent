@@ -1,3 +1,5 @@
+import './form-builder';
+
 const workspaceMenu = document.querySelector('#workspace-menu');
 const openWorkspaceMenu = document.querySelector('[data-open-workspace-menu]');
 

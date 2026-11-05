@@ -78,6 +78,7 @@
                     <h2 id="details-heading" class="text-sm font-medium">Details</h2>
                     <dl class="flex flex-col gap-4">
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Applications</dt><dd class="text-sm font-medium">{{ $jobPosting->applications_count }}</dd></div>
+                        <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Form responses</dt><dd class="text-sm font-medium">{{ $jobPosting->form_submissions_count }}</dd></div>
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Department</dt><dd class="text-sm font-medium">{{ $jobPosting->department ?? '—' }}</dd></div>
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Location</dt><dd class="text-sm font-medium">{{ $jobPosting->location ?? '—' }}</dd></div>
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Experience</dt><dd class="text-sm font-medium">{{ $jobPosting->min_experience_years !== null ? $jobPosting->min_experience_years.'+ years' : '—' }}</dd></div>
@@ -100,6 +101,15 @@
                     @else
                         <p class="text-sm leading-relaxed text-muted">No form is attached. Candidates cannot submit a form application for this role yet.</p>
                     @endif
+
+                    <div class="flex flex-wrap items-center gap-4 border-t border-line/60 pt-4">
+                        <a href="{{ route('job-postings.responses.index', $jobPosting) }}" class="text-sm font-medium underline underline-offset-4">View responses ({{ $jobPosting->form_submissions_count }})</a>
+                        @if ($jobPosting->form)
+                            @can('update', $jobPosting->form)
+                                <a href="{{ route('forms.builder', $jobPosting->form) }}" class="text-sm text-muted underline-offset-4 hover:underline">Manage form</a>
+                            @endcan
+                        @endif
+                    </div>
                 </section>
 
                 @can('update', $jobPosting)

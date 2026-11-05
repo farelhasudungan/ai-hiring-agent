@@ -47,7 +47,7 @@
                     <option value="{{ $form->id }}" @selected((string) $selectedFormId === (string) $form->id)>{{ $form->title }} ({{ $form->status }})</option>
                 @endforeach
             </select>
-            <p class="text-xs text-muted">Candidates use this form to apply for the role.</p>
+            <p class="text-xs text-muted">Candidates use this form to apply for the role. @can('viewAny', App\Models\Form::class)<a href="{{ route('forms.index') }}" class="underline underline-offset-4 hover:text-ink">Manage forms</a>@endcan</p>
             @error('form_id')
                 <p role="alert" class="text-sm text-red-800">{{ $message }}</p>
             @enderror
