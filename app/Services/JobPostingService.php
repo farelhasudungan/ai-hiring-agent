@@ -16,7 +16,9 @@ class JobPostingService
      */
     public const STATUSES = ['draft', 'open', 'closed'];
 
-    public function __construct(private JobPostingRepository $repository) {}
+    public function __construct(private JobPostingRepository $repository)
+    {
+    }
 
     /**
      * @param  array<string, mixed>  $attributes
