@@ -1,4 +1,4 @@
-<x-dashboard-layout :title="'Response · '.($response->candidate?->full_name ?? 'Candidate')">
+<x-dashboard-layout :title="'Response · '.$response->respondentName()">
     <div class="flex flex-col gap-8">
         <div class="flex flex-col gap-5">
             <a href="{{ route('job-postings.responses.index', $jobPosting) }}" class="inline-flex w-fit items-center gap-2 text-sm text-muted underline-offset-4 hover:underline"><span aria-hidden="true">←</span> All responses</a>
@@ -9,8 +9,8 @@
                         <x-form-response-status :status="$response->status" />
                         <span class="text-xs text-muted">Submitted {{ $response->submitted_at?->format('M j, Y g:i A') ?? '—' }}</span>
                     </div>
-                    <h1 class="text-3xl leading-tight font-medium tracking-tight wrap-anywhere sm:text-4xl">{{ $response->candidate?->full_name ?? 'Unknown candidate' }}</h1>
-                    <p class="text-sm text-muted">{{ $jobPosting->title }} <span aria-hidden="true">·</span> {{ $response->candidate?->email ?? 'No email' }}</p>
+                    <h1 class="text-3xl leading-tight font-medium tracking-tight wrap-anywhere sm:text-4xl">{{ $response->respondentName() }}</h1>
+                    <p class="text-sm text-muted">{{ $jobPosting->title }} <span aria-hidden="true">·</span> {{ $response->respondentEmail() ?? 'No email provided' }}</p>
                 </div>
 
                 @can('update', $jobPosting)
@@ -79,12 +79,20 @@
             <div class="flex min-w-0 flex-col gap-6">
                 <section class="flex flex-col gap-5 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="candidate-heading">
                     <h2 id="candidate-heading" class="text-sm font-medium">Candidate</h2>
-                    <dl class="flex flex-col gap-4">
-                        <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Name</dt><dd class="text-sm font-medium wrap-anywhere">{{ $response->candidate?->full_name ?? '—' }}</dd></div>
-                        <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Email</dt><dd class="text-sm font-medium wrap-anywhere">{{ $response->candidate?->email ?? '—' }}</dd></div>
-                        <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Phone</dt><dd class="text-sm font-medium">{{ $response->candidate?->phone ?? '—' }}</dd></div>
-                        <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Source</dt><dd class="text-sm font-medium capitalize">{{ $response->candidate?->source ?? '—' }}</dd></div>
-                    </dl>
+                    @if ($response->candidate)
+                        <dl class="flex flex-col gap-4">
+                            <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Name</dt><dd class="text-sm font-medium wrap-anywhere">{{ $response->candidate->full_name }}</dd></div>
+                            <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Email</dt><dd class="text-sm font-medium wrap-anywhere">{{ $response->candidate->email }}</dd></div>
+                            <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Phone</dt><dd class="text-sm font-medium">{{ $response->candidate->phone ?? '—' }}</dd></div>
+                            <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Source</dt><dd class="text-sm font-medium capitalize">{{ $response->candidate->source }}</dd></div>
+                        </dl>
+                    @else
+                        <p class="text-sm leading-relaxed text-muted">This response is not linked to a candidate because the form did not collect an email address. Add an email question mapped to <span class="font-medium text-ink">Candidate email</span> to create candidate records from future submissions.</p>
+                        <dl class="flex flex-col gap-4 border-t border-line/60 pt-4">
+                            <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Name from response</dt><dd class="text-sm font-medium wrap-anywhere">{{ $response->respondentName() }}</dd></div>
+                            <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Email</dt><dd class="text-sm font-medium">Not provided</dd></div>
+                        </dl>
+                    @endif
                 </section>
 
                 @if ($response->application)

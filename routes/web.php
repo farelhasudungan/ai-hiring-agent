@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\JobPostingResponseController;
+use App\Http\Controllers\PublicApplicationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,10 @@ use Illuminate\View\View;
 Route::get('/', function (): View {
     return view('welcome');
 })->name('home');
+
+Route::get('apply/{token}', [PublicApplicationController::class, 'show'])->name('public.apply.show');
+Route::post('apply/{token}', [PublicApplicationController::class, 'store'])->middleware('throttle:public-application')->name('public.apply.store');
+Route::get('apply/{token}/thank-you', [PublicApplicationController::class, 'success'])->name('public.apply.success');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [SessionController::class, 'create'])->name('login');

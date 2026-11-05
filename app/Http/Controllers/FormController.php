@@ -56,7 +56,7 @@ class FormController extends Controller
     {
         Gate::authorize('view', $form);
 
-        $form->load(['sections.fields.options', 'jobPostings'])
+        $form->load(['sections.fields.options', 'fields', 'jobPostings'])
             ->loadCount(['fields', 'submissions', 'jobPostings']);
 
         return view('forms.show', [

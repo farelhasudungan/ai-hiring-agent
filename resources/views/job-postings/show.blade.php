@@ -97,6 +97,20 @@
                             @if ($jobPosting->form->description)
                                 <p class="text-sm leading-relaxed text-muted">{{ $jobPosting->form->description }}</p>
                             @endif
+
+                            @if ($jobPosting->form->isAcceptingResponses() && $jobPosting->form->publicUrl($jobPosting))
+                                <div class="flex flex-col gap-2 rounded-[20px] bg-canvas/60 p-4">
+                                    <p class="text-xs font-medium">Public application link</p>
+                                    <label for="public-job-link" class="sr-only">Public application link</label>
+                                    <input id="public-job-link" readonly value="{{ $jobPosting->form->publicUrl($jobPosting) }}" class="min-h-11 w-full rounded-[16px] border border-line bg-paper px-4 text-xs text-muted">
+                                    <div class="flex flex-wrap items-center gap-3">
+                                        <button type="button" data-copy-link data-copy-target="public-job-link" class="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-xs font-medium text-canvas transition hover:bg-ink/85">Copy link</button>
+                                        <a href="{{ $jobPosting->form->publicUrl($jobPosting) }}" target="_blank" rel="noopener" class="text-xs font-medium underline underline-offset-4">Open form <span aria-hidden="true">↗</span></a>
+                                    </div>
+                                </div>
+                            @elseif ($jobPosting->form)
+                                <p class="text-xs leading-relaxed text-muted">{{ $jobPosting->form->status === 'draft' ? 'Publish this form to generate a public application link.' : 'This form is not accepting responses right now. Reopen it or extend the close date to generate a working link.' }}</p>
+                            @endif
                         </div>
                     @else
                         <p class="text-sm leading-relaxed text-muted">No form is attached. Candidates cannot submit a form application for this role yet.</p>

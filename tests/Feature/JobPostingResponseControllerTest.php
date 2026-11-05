@@ -133,6 +133,41 @@ test('the response detail page shows candidate answers', function () {
         ->assertSee('Five years of PHP experience.');
 });
 
+test('responses without a linked candidate show the name from their answers', function () {
+    [$user, $jobPosting, $form] = responseContext();
+
+    $submission = FormSubmission::factory()->create([
+        'form_id' => $form->id,
+        'job_posting_id' => $jobPosting->id,
+        'candidate_id' => null,
+    ]);
+
+    $field = FormField::factory()->create([
+        'form_id' => $form->id,
+        'field_key' => 'full_name',
+        'label' => 'Full name',
+        'maps_to' => 'candidate.full_name',
+    ]);
+
+    FormAnswer::factory()->create([
+        'form_submission_id' => $submission->id,
+        'form_field_id' => $field->id,
+        'value' => 'Ada Lovelace',
+    ]);
+
+    $this->actingAs($user)->get(route('job-postings.responses.index', $jobPosting))
+        ->assertOk()
+        ->assertSee('Ada Lovelace')
+        ->assertSee('No email provided')
+        ->assertDontSee('Unknown candidate');
+
+    $this->actingAs($user)->get(route('job-postings.responses.show', [$jobPosting, $submission]))
+        ->assertOk()
+        ->assertSee('Ada Lovelace')
+        ->assertSee('not linked to a candidate')
+        ->assertSee('Add an email question mapped to');
+});
+
 test('viewers can read responses but cannot change or delete them', function () {
     [$user, $jobPosting, $form] = responseContext('viewer');
     $submission = FormSubmission::factory()->create([

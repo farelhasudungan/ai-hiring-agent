@@ -63,8 +63,11 @@
                             @foreach ($responses as $response)
                                 <tr class="transition hover:bg-canvas/60">
                                     <td class="px-6 py-5">
-                                        <p class="font-medium wrap-anywhere">{{ $response->candidate?->full_name ?? 'Unknown candidate' }}</p>
-                                        <p class="mt-1 text-xs text-muted wrap-anywhere">{{ $response->candidate?->email ?? 'No email' }}</p>
+                                        <p class="font-medium wrap-anywhere">{{ $response->respondentName() }}</p>
+                                        <p class="mt-1 text-xs text-muted wrap-anywhere">{{ $response->respondentEmail() ?? 'No email provided' }}</p>
+                                        @if (! $response->candidate)
+                                            <span class="mt-2 inline-flex rounded-full bg-canvas px-2.5 py-0.5 text-[11px] text-muted">Not linked to a candidate</span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-5"><x-form-response-status :status="$response->status" /></td>
                                     <td class="px-6 py-5">{{ $response->answers_count }}</td>

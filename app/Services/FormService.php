@@ -62,6 +62,7 @@ class FormService
         $attributes = $this->prepareMetadata($attributes);
         $attributes['company_id'] = $user->company_id;
         $attributes['created_by'] = $user->id;
+        $attributes['public_token'] ??= $this->newPublicToken();
 
         if ($attributes['status'] === 'published') {
             $attributes['published_at'] = now();
@@ -76,6 +77,7 @@ class FormService
     public function update(User $user, Form $form, array $attributes): Form
     {
         $this->ensureCompanyMatches($user, $form);
+        $form = $this->ensurePublicToken($form);
 
         $attributes = $this->prepareMetadata($attributes, $form->settings ?? []);
 
@@ -89,6 +91,7 @@ class FormService
     public function updateStatus(User $user, Form $form, string $status): Form
     {
         $this->ensureCompanyMatches($user, $form);
+        $form = $this->ensurePublicToken($form);
 
         if (! in_array($status, self::STATUSES, true)) {
             throw new DomainException('The selected form status is invalid.');
@@ -192,6 +195,24 @@ class FormService
         if ($user->company_id === null || $user->company_id !== $form->company_id) {
             throw new DomainException('This form does not belong to your company.');
         }
+    }
+
+    private function ensurePublicToken(Form $form): Form
+    {
+        if (blank($form->public_token)) {
+            $form->update(['public_token' => $this->newPublicToken()]);
+        }
+
+        return $form;
+    }
+
+    private function newPublicToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (Form::query()->where('public_token', $token)->exists());
+
+        return $token;
     }
 
     /**

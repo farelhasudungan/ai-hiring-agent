@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'title',
     'description',
     'status',
+    'public_token',
     'version',
     'settings',
     'published_at',
@@ -86,5 +87,32 @@ class Form extends Model
     public function jobPostings(): HasMany
     {
         return $this->hasMany(JobPosting::class);
+    }
+
+    /**
+     * Determine whether the form can accept new public responses.
+     */
+    public function isAcceptingResponses(): bool
+    {
+        return $this->status === 'published'
+            && ($this->closes_at === null || $this->closes_at->isFuture());
+    }
+
+    /**
+     * Build the public application URL, optionally scoped to a job posting.
+     */
+    public function publicUrl(?JobPosting $jobPosting = null): ?string
+    {
+        if (blank($this->public_token)) {
+            return null;
+        }
+
+        $parameters = ['token' => $this->public_token];
+
+        if ($jobPosting !== null) {
+            $parameters['job'] = $jobPosting->id;
+        }
+
+        return route('public.apply.show', $parameters);
     }
 }

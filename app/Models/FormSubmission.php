@@ -85,4 +85,49 @@ class FormSubmission extends Model
     {
         return $this->hasMany(AiScreening::class);
     }
+
+    /**
+     * Get the best available name for the person who submitted the form.
+     */
+    public function respondentName(): string
+    {
+        if ($this->candidate?->full_name) {
+            return $this->candidate->full_name;
+        }
+
+        $storedName = $this->meta['respondent_name'] ?? null;
+
+        if (is_string($storedName) && trim($storedName) !== '') {
+            return trim($storedName);
+        }
+
+        $nameAnswer = $this->answers->first(function (FormAnswer $answer): bool {
+            $field = $answer->field;
+
+            return $field !== null
+                && ($field->maps_to === 'candidate.full_name'
+                    || in_array(strtolower($field->field_key), ['full_name', 'name'], true));
+        }) ?? $this->answers->first(function (FormAnswer $answer): bool {
+            $field = $answer->field;
+
+            return $field !== null && str_contains(strtolower($field->field_key), 'name');
+        });
+
+        $value = $nameAnswer?->value;
+
+        if (is_scalar($value) && trim((string) $value) !== '') {
+            return trim((string) $value);
+        }
+
+        return 'Unnamed applicant';
+    }
+
+    /**
+     * Get the best available email for the person who submitted the form.
+     */
+    public function respondentEmail(): ?string
+    {
+        return $this->candidate?->email
+            ?? (is_string($this->meta['respondent_email'] ?? null) ? $this->meta['respondent_email'] : null);
+    }
 }

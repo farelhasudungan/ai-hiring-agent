@@ -26,9 +26,16 @@ class AppServiceProvider extends ServiceProvider
             $email = $request->input('email');
             $identifier = is_string($email) ? mb_strtolower(trim($email)) : '';
 
-            return Limit::perMinute(5)->by(hash('sha256', $identifier . '|' . $request->ip()));
+            return Limit::perMinute(5)->by(hash('sha256', $identifier.'|'.$request->ip()));
         });
 
         RateLimiter::for('registration', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
+
+        RateLimiter::for('public-application', function (Request $request): Limit {
+            $token = $request->route('token');
+            $identifier = is_string($token) ? $token : '';
+
+            return Limit::perMinute(10)->by(hash('sha256', $identifier.'|'.$request->ip()));
+        });
     }
 }

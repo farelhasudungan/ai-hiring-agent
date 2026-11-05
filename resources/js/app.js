@@ -1,5 +1,41 @@
 import './form-builder';
 
+document.querySelectorAll('[data-copy-link]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        const target = document.getElementById(button.dataset.copyTarget);
+
+        if (!target) {
+            return;
+        }
+
+        const value = 'value' in target ? target.value : target.textContent;
+
+        try {
+            await navigator.clipboard.writeText(value);
+        } catch {
+            target.select?.();
+            document.execCommand('copy');
+        }
+
+        const originalLabel = button.textContent;
+        button.textContent = 'Copied';
+        window.setTimeout(() => {
+            button.textContent = originalLabel;
+        }, 2000);
+    });
+});
+
+const publicApplicationForm = document.querySelector('[data-public-application]');
+
+if (publicApplicationForm) {
+    const firstError = publicApplicationForm.querySelector('[data-field-error]');
+
+    if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstError.querySelector('input, select, textarea, button')?.focus({ preventScroll: true });
+    }
+}
+
 const workspaceMenu = document.querySelector('#workspace-menu');
 const openWorkspaceMenu = document.querySelector('[data-open-workspace-menu]');
 

@@ -14,6 +14,9 @@
         'phone' => 'Phone',
         'linear_scale' => 'Linear scale',
     ];
+    $hasEmailQuestion = $form->fields->contains(fn ($field) => $field->type === 'email'
+        || $field->maps_to === 'candidate.email'
+        || str_contains(strtolower($field->field_key), 'email'));
 @endphp
 
 <x-dashboard-layout :title="$form->title">
@@ -103,6 +106,41 @@
                     </dl>
                 </section>
 
+                @if ($form->isAcceptingResponses() && $form->publicUrl())
+                    <section class="flex flex-col gap-4 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="public-link-heading">
+                        <div class="flex flex-col gap-1">
+                            <h2 id="public-link-heading" class="text-sm font-medium">Public application link</h2>
+                            <p class="text-xs leading-relaxed text-muted">Share this link with applicants. It works without logging in.</p>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <label for="public-form-link" class="sr-only">Public application link</label>
+                            <input id="public-form-link" readonly value="{{ $form->publicUrl() }}" class="min-h-11 w-full rounded-[16px] border border-line bg-canvas/40 px-4 text-xs text-muted">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button type="button" data-copy-link data-copy-target="public-form-link" class="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-xs font-medium text-canvas transition hover:bg-ink/85">Copy link</button>
+                                <a href="{{ $form->publicUrl() }}" target="_blank" rel="noopener" class="text-xs font-medium underline underline-offset-4">Open form <span aria-hidden="true">↗</span></a>
+                            </div>
+                        </div>
+                        @if ($form->jobPostings->count() > 1)
+                            <p class="text-xs leading-relaxed text-muted">Applicants will choose a role before filling in the form. Use a role-specific link from the job postings below to send them straight to that role.</p>
+                        @elseif ($form->jobPostings->isEmpty())
+                            <p class="text-xs leading-relaxed text-muted">This form is not attached to a job posting yet. Responses will be stored as general form responses.</p>
+                        @endif
+                        @unless ($hasEmailQuestion)
+                            <p class="text-xs leading-relaxed text-muted">Tip: add an email question so public submissions also create candidate records and applications. Without one, responses are still saved under the selected job.</p>
+                        @endunless
+                    </section>
+                @elseif ($form->status === 'published')
+                    <section class="flex flex-col gap-2 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="public-link-heading">
+                        <h2 id="public-link-heading" class="text-sm font-medium">Public application link</h2>
+                        <p class="text-xs leading-relaxed text-muted">This form is closed and is no longer accepting responses. Reopen it or extend the close date to generate a working link.</p>
+                    </section>
+                @else
+                    <section class="flex flex-col gap-2 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="public-link-heading">
+                        <h2 id="public-link-heading" class="text-sm font-medium">Public application link</h2>
+                        <p class="text-xs leading-relaxed text-muted">{{ $form->status === 'draft' ? 'Publish this form to generate a public application link.' : 'This form is closed. Reopen it to generate a public application link.' }}</p>
+                    </section>
+                @endif
+
                 @if ($form->settings['confirmation_message'] ?? null)
                     <section class="flex flex-col gap-3 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="confirmation-heading">
                         <h2 id="confirmation-heading" class="text-sm font-medium">Confirmation message</h2>
@@ -156,7 +194,12 @@
                                 <a href="{{ route('job-postings.show', $jobPosting) }}" class="text-sm font-medium underline-offset-4 hover:underline">{{ $jobPosting->title }}</a>
                                 <p class="text-xs text-muted">{{ $jobPosting->department ?? 'No department' }} · {{ $jobPosting->location ?? 'No location' }}</p>
                             </div>
-                            <a href="{{ route('job-postings.responses.index', $jobPosting) }}" class="text-sm text-muted underline-offset-4 hover:underline">View responses</a>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <a href="{{ route('job-postings.responses.index', $jobPosting) }}" class="text-sm text-muted underline-offset-4 hover:underline">View responses</a>
+                                @if ($form->isAcceptingResponses() && $form->publicUrl($jobPosting))
+                                    <a href="{{ $form->publicUrl($jobPosting) }}" target="_blank" rel="noopener" class="text-sm text-muted underline-offset-4 hover:underline">Public link</a>
+                                @endif
+                            </div>
                         </li>
                     @endforeach
                 </ul>

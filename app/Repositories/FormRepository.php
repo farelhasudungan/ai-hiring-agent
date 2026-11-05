@@ -62,7 +62,7 @@ class FormRepository
         return FormSubmission::query()
             ->where('job_posting_id', $jobPostingId)
             ->when($status !== null, fn ($query) => $query->where('status', $status))
-            ->with(['candidate', 'application'])
+            ->with(['candidate', 'application', 'answers.field'])
             ->withCount('answers')
             ->latest('submitted_at')
             ->paginate($perPage)

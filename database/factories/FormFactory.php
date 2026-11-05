@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Company;
 use App\Models\Form;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Form>
@@ -24,6 +25,7 @@ class FormFactory extends Factory
             'title' => fake()->sentence(3),
             'description' => fake()->optional()->paragraph(),
             'status' => 'published',
+            'public_token' => Str::random(40),
             'version' => 1,
             'settings' => [
                 'confirmation_message' => 'Thank you for applying. We will review your submission shortly.',
