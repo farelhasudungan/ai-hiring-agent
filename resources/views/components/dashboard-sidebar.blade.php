@@ -13,6 +13,13 @@
             <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
             Overview
         </a>
+        @if ($user->company_id)
+            <a href="{{ route('job-postings.index') }}" @if (request()->routeIs('job-postings.*')) aria-current="page" @endif
+                @class(['flex min-h-12 items-center gap-3 rounded-[20px] px-4 text-sm font-medium transition', 'bg-ink text-paper' => request()->routeIs('job-postings.*'), 'text-muted hover:bg-canvas hover:text-ink' => ! request()->routeIs('job-postings.*')])>
+                <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Job postings
+            </a>
+        @endif
         <a href="{{ $user->company_id ? route('dashboard').'#company' : route('companies.create') }}" @if (request()->routeIs('companies.*')) aria-current="page" @endif
             @class(['flex min-h-12 items-center gap-3 rounded-[20px] px-4 text-sm font-medium transition', 'bg-ink text-paper' => request()->routeIs('companies.*'), 'text-muted hover:bg-canvas hover:text-ink' => ! request()->routeIs('companies.*')])>
             <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 21v-4h6v4M9 7h1m4 0h1M9 11h1m4 0h1" stroke-linecap="round" stroke-linejoin="round"/></svg>

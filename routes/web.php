@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
@@ -22,4 +23,6 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
     Route::resource('companies', CompanyController::class)->only(['create', 'store']);
+    Route::patch('job-postings/{jobPosting}/status', [JobPostingController::class, 'updateStatus'])->name('job-postings.update-status');
+    Route::resource('job-postings', JobPostingController::class)->parameters(['job-postings' => 'jobPosting']);
 });

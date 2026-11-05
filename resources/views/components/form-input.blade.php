@@ -1,12 +1,21 @@
-@props(['name', 'label', 'type' => 'text', 'hint' => null])
+@props(['name', 'label', 'type' => 'text', 'hint' => null, 'value' => null])
+
+@php($isRequired = $attributes->has('required'))
 
 <div class="flex flex-col gap-2">
-    <label for="{{ $name }}" class="text-sm font-medium">{{ $label }}</label>
+    <label for="{{ $name }}" class="flex items-center gap-2 text-sm font-medium">
+        {{ $label }}
+        @if ($isRequired)
+            <span class="text-accent" aria-hidden="true">*</span>
+        @else
+            <span class="text-xs font-normal text-muted">Optional</span>
+        @endif
+    </label>
     <input
         id="{{ $name }}"
         name="{{ $name }}"
         type="{{ $type }}"
-        @if ($type !== 'password') value="{{ old($name) }}" @endif
+        @if ($type !== 'password') value="{{ old($name, $value) }}" @endif
         aria-invalid="{{ $errors->has($name) ? 'true' : 'false' }}"
         @if ($errors->has($name)) aria-describedby="{{ $name }}-error"
         @elseif ($hint) aria-describedby="{{ $name }}-hint" @endif
