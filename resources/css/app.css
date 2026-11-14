@@ -11,6 +11,9 @@
     --color-line: #d1cdc7;
     --color-accent: #cf4500;
     --color-orbit: #f37338;
+    --color-brand: #2563eb;
+    --font-geist: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --font-geist-mono: 'Geist Mono', 'Liberation Mono', ui-monospace, monospace;
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }

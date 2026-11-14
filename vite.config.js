@@ -12,6 +12,12 @@ export default defineConfig({
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
                 }),
+                bunny('Geist', {
+                    weights: [400, 500, 600, 700],
+                }),
+                bunny('Geist Mono', {
+                    weights: [400],
+                }),
             ],
         }),
         tailwindcss(),
