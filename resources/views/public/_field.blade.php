@@ -9,7 +9,7 @@
         $field->help_text ? 'field-'.$field->id.'-help' : null,
         $hasError ? 'field-'.$field->id.'-error' : null,
     ])->filter()->implode(' ');
-    $inputClasses = 'min-h-12 w-full rounded-[16px] border bg-paper px-4 py-3 text-sm placeholder:text-muted/70 '
+    $inputClasses = 'min-h-12 w-full rounded-xl border bg-paper px-4 py-3 text-sm placeholder:text-muted/70 '
         .($hasError ? 'border-red-700' : 'border-line');
     $inputType = match ($field->type) {
         'email' => 'email',
@@ -26,12 +26,12 @@
     $isGroup = in_array($field->type, ['multiple_choice', 'checkboxes', 'linear_scale'], true);
 @endphp
 
-<div @class(['flex flex-col gap-2', 'rounded-[20px]' => $hasError]) @if ($hasError) data-field-error @endif>
+<div @class(['flex flex-col gap-2', 'rounded-xl' => $hasError]) @if ($hasError) data-field-error @endif>
     @if ($isGroup)
         <p id="field-{{ $field->id }}" class="flex flex-wrap items-center gap-2 text-sm font-medium">
             <span>{{ $field->label }}</span>
             @if ($field->is_required)
-                <span class="text-accent" aria-hidden="true">*</span>
+                <span class="text-red-500" aria-hidden="true">*</span>
             @else
                 <span class="text-xs font-normal text-muted">Optional</span>
             @endif
@@ -40,7 +40,7 @@
         <label for="field-{{ $field->id }}" class="flex flex-wrap items-center gap-2 text-sm font-medium">
             <span>{{ $field->label }}</span>
             @if ($field->is_required)
-                <span class="text-accent" aria-hidden="true">*</span>
+                <span class="text-red-500" aria-hidden="true">*</span>
             @else
                 <span class="text-xs font-normal text-muted">Optional</span>
             @endif
@@ -60,7 +60,7 @@
     @elseif ($field->type === 'multiple_choice')
         <div role="radiogroup" aria-labelledby="field-{{ $field->id }}" class="flex flex-col gap-2">
             @forelse ($field->options as $option)
-                <label class="flex cursor-pointer items-start gap-3 rounded-[16px] border {{ $hasError ? 'border-red-200' : 'border-line' }} bg-canvas/40 p-3 text-sm transition hover:bg-canvas">
+                <label class="flex cursor-pointer items-start gap-3 rounded-xl border {{ $hasError ? 'border-red-200' : 'border-line' }} bg-canvas/40 p-3 text-sm transition hover:bg-canvas">
                     <input type="radio" name="answers[{{ $field->id }}]" value="{{ $option->value }}"
                         @checked((string) $oldValue === (string) $option->value)
                         aria-invalid="{{ $hasError ? 'true' : 'false' }}"
@@ -75,7 +75,7 @@
     @elseif ($field->type === 'checkboxes')
         <div role="group" aria-labelledby="field-{{ $field->id }}" class="flex flex-col gap-2">
             @forelse ($field->options as $option)
-                <label class="flex cursor-pointer items-start gap-3 rounded-[16px] border {{ $hasError ? 'border-red-200' : 'border-line' }} bg-canvas/40 p-3 text-sm transition hover:bg-canvas">
+                <label class="flex cursor-pointer items-start gap-3 rounded-xl border {{ $hasError ? 'border-red-200' : 'border-line' }} bg-canvas/40 p-3 text-sm transition hover:bg-canvas">
                     <input type="checkbox" name="answers[{{ $field->id }}][]" value="{{ $option->value }}"
                         @checked(in_array($option->value, $checkedValues, true))
                         aria-invalid="{{ $hasError ? 'true' : 'false' }}"
@@ -101,7 +101,7 @@
         <div class="flex flex-col gap-2">
             <div role="radiogroup" aria-labelledby="field-{{ $field->id }}" class="flex flex-wrap gap-2">
                 @foreach (range(1, 5) as $scale)
-                    <label class="flex min-w-12 cursor-pointer items-center justify-center rounded-[16px] border {{ $hasError ? 'border-red-200' : 'border-line' }} bg-canvas/40 px-3 py-2 text-sm transition hover:bg-canvas">
+                    <label class="flex min-w-12 cursor-pointer items-center justify-center rounded-xl border {{ $hasError ? 'border-red-200' : 'border-line' }} bg-canvas/40 px-3 py-2 text-sm transition hover:bg-canvas">
                         <input type="radio" name="answers[{{ $field->id }}]" value="{{ $scale }}"
                             @checked((string) $oldValue === (string) $scale)
                             aria-invalid="{{ $hasError ? 'true' : 'false' }}"
@@ -121,7 +121,7 @@
             @if ($accept !== '') accept="{{ $accept }}" @endif
             aria-invalid="{{ $hasError ? 'true' : 'false' }}"
             @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
-            class="block w-full cursor-pointer rounded-[16px] border border-dashed bg-paper p-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:text-sm file:font-medium file:text-canvas hover:bg-canvas/40 {{ $hasError ? 'border-red-700' : 'border-line' }}">
+            class="block w-full cursor-pointer rounded-xl border border-dashed bg-paper p-3 text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-ink file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:bg-canvas/40 {{ $hasError ? 'border-red-700' : 'border-line' }}">
     @else
         <input id="field-{{ $field->id }}" type="{{ $inputType }}" name="answers[{{ $field->id }}]"
             value="{{ is_scalar($oldValue) ? $oldValue : '' }}"

@@ -19,34 +19,34 @@
                     </p>
                 </div>
                 @can('update', $jobPosting)
-                    <a href="{{ route('job-postings.edit', $jobPosting) }}" class="inline-flex min-h-12 items-center gap-4 rounded-[20px] border border-line bg-paper px-5 py-3 text-sm font-medium transition hover:bg-canvas">Edit posting <span aria-hidden="true">↗</span></a>
+                    <a href="{{ route('job-postings.edit', $jobPosting) }}" class="inline-flex min-h-12 items-center gap-4 rounded-xl border border-line bg-paper px-5 py-3 text-sm font-medium transition hover:bg-canvas">Edit posting <span aria-hidden="true">↗</span></a>
                 @endcan
             </div>
         </div>
 
         @if ($errors->has('job_posting'))
-            <div role="alert" class="rounded-[20px] border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">{{ $errors->first('job_posting') }}</div>
+            <div role="alert" class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">{{ $errors->first('job_posting') }}</div>
         @endif
 
         <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <div class="flex min-w-0 flex-col gap-6">
-                <section class="flex flex-col gap-4 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="description-heading">
+                <section class="flex flex-col gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="description-heading">
                     <h2 id="description-heading" class="text-sm font-medium">About the role</h2>
                     <p class="text-sm leading-relaxed whitespace-pre-line">{{ $jobPosting->description }}</p>
                 </section>
 
                 @if ($jobPosting->requirements)
-                    <section class="flex flex-col gap-4 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="requirements-heading">
+                    <section class="flex flex-col gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="requirements-heading">
                         <h2 id="requirements-heading" class="text-sm font-medium">Requirements</h2>
                         <p class="text-sm leading-relaxed whitespace-pre-line">{{ $jobPosting->requirements }}</p>
                     </section>
                 @endif
 
-                <section class="flex flex-col gap-6 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="skills-heading">
+                <section class="flex flex-col gap-6 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="skills-heading">
                     <h2 id="skills-heading" class="text-sm font-medium">Skills</h2>
 
                     <div class="flex flex-col gap-3">
-                        <p class="text-xs tracking-widest text-muted uppercase">Required</p>
+                        <p class="font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">Required</p>
                         @if (! empty($jobPosting->required_skills))
                             <div class="flex flex-wrap gap-2">
                                 @foreach ($jobPosting->required_skills as $skill)
@@ -59,7 +59,7 @@
                     </div>
 
                     <div class="flex flex-col gap-3 border-t border-line/60 pt-5">
-                        <p class="text-xs tracking-widest text-muted uppercase">Nice to have</p>
+                        <p class="font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">Nice to have</p>
                         @if (! empty($jobPosting->nice_to_have))
                             <div class="flex flex-wrap gap-2">
                                 @foreach ($jobPosting->nice_to_have as $skill)
@@ -74,7 +74,7 @@
             </div>
 
             <div class="flex min-w-0 flex-col gap-6">
-                <section class="flex flex-col gap-5 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="details-heading">
+                <section class="flex flex-col gap-5 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="details-heading">
                     <h2 id="details-heading" class="text-sm font-medium">Details</h2>
                     <dl class="flex flex-col gap-4">
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Applications</dt><dd class="text-sm font-medium">{{ $jobPosting->applications_count }}</dd></div>
@@ -85,7 +85,7 @@
                     </dl>
                 </section>
 
-                <section class="flex flex-col gap-4 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="form-heading">
+                <section class="flex flex-col gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="form-heading">
                     <h2 id="form-heading" class="text-sm font-medium">Application form</h2>
                     @if ($jobPosting->form)
                         <div class="flex flex-col gap-3">
@@ -99,12 +99,12 @@
                             @endif
 
                             @if ($jobPosting->form->isAcceptingResponses() && $jobPosting->form->publicUrl($jobPosting))
-                                <div class="flex flex-col gap-2 rounded-[20px] bg-canvas/60 p-4">
+                                <div class="flex flex-col gap-2 rounded-xl bg-canvas/60 p-4">
                                     <p class="text-xs font-medium">Public application link</p>
                                     <label for="public-job-link" class="sr-only">Public application link</label>
-                                    <input id="public-job-link" readonly value="{{ $jobPosting->form->publicUrl($jobPosting) }}" class="min-h-11 w-full rounded-[16px] border border-line bg-paper px-4 text-xs text-muted">
+                                    <input id="public-job-link" readonly value="{{ $jobPosting->form->publicUrl($jobPosting) }}" class="min-h-11 w-full rounded-xl border border-line bg-paper px-4 text-xs text-muted">
                                     <div class="flex flex-wrap items-center gap-3">
-                                        <button type="button" data-copy-link data-copy-target="public-job-link" class="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-xs font-medium text-canvas transition hover:bg-ink/85">Copy link</button>
+                                        <button type="button" data-copy-link data-copy-target="public-job-link" class="inline-flex min-h-10 items-center rounded-xl bg-brand px-4 text-xs font-medium text-white transition hover:bg-brand/90">Copy link</button>
                                         <a href="{{ $jobPosting->form->publicUrl($jobPosting) }}" target="_blank" rel="noopener" class="text-xs font-medium underline underline-offset-4">Open form <span aria-hidden="true">↗</span></a>
                                     </div>
                                 </div>
@@ -127,13 +127,13 @@
                 </section>
 
                 @can('update', $jobPosting)
-                    <section class="flex flex-col gap-4 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="status-heading">
+                    <section class="flex flex-col gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="status-heading">
                         <h2 id="status-heading" class="text-sm font-medium">Status</h2>
                         <form action="{{ route('job-postings.update-status', $jobPosting) }}" method="POST" class="flex flex-col gap-3">
                             @csrf
                             @method('PATCH')
                             <label for="status" class="sr-only">Job posting status</label>
-                            <select id="status" name="status" class="min-h-12 w-full rounded-[20px] border border-line bg-paper px-4 text-sm">
+                            <select id="status" name="status" class="min-h-12 w-full rounded-xl border border-line bg-paper px-4 text-sm">
                                 @foreach (['draft' => 'Draft', 'open' => 'Open', 'closed' => 'Closed'] as $value => $label)
                                     <option value="{{ $value }}" @selected($jobPosting->status === $value)>{{ $label }}</option>
                                 @endforeach
@@ -141,7 +141,7 @@
                             @error('status')
                                 <p role="alert" class="text-sm text-red-800">{{ $message }}</p>
                             @enderror
-                            <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-[20px] bg-ink px-5 py-2 text-sm font-medium text-canvas transition hover:bg-ink/85">Update status</button>
+                            <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand px-5 py-2 text-sm font-medium text-white transition hover:bg-brand/90">Update status</button>
                         </form>
                     </section>
 
@@ -149,14 +149,14 @@
                         <form action="{{ route('job-postings.destroy', $jobPosting) }}" method="POST" onsubmit="return confirm('Delete this job posting? This cannot be undone.');">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-[20px] border border-red-200 px-5 py-2 text-sm text-red-800 transition hover:bg-red-50">Delete job posting</button>
+                            <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-red-200 px-5 py-2 text-sm text-red-800 transition hover:bg-red-50">Delete job posting</button>
                         </form>
                     @endcan
                 @endcan
             </div>
         </div>
 
-        <section class="flex flex-col gap-6 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="applications-heading">
+        <section class="flex flex-col gap-6 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="applications-heading">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 id="applications-heading" class="text-sm font-medium">Recent applications</h2>
                 <span class="text-xs text-muted">{{ $jobPosting->applications_count }} total</span>
@@ -167,7 +167,7 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-sm">
-                        <thead class="border-b border-line/60 text-[11px] tracking-widest text-muted uppercase">
+                        <thead class="border-b border-line/60 font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">
                             <tr>
                                 <th scope="col" class="py-3 pr-6 font-semibold">Candidate</th>
                                 <th scope="col" class="py-3 pr-6 font-semibold">Status</th>

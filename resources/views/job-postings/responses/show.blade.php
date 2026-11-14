@@ -18,25 +18,25 @@
                         @csrf
                         @method('PATCH')
                         <label for="response-status" class="sr-only">Response status</label>
-                        <select id="response-status" name="status" class="min-h-11 rounded-[20px] border border-line bg-paper px-4 text-sm">
+                        <select id="response-status" name="status" class="min-h-11 rounded-xl border border-line bg-paper px-4 text-sm">
                             @foreach (['submitted' => 'Submitted', 'processed' => 'Processed', 'spam' => 'Spam', 'draft' => 'Draft'] as $value => $label)
                                 <option value="{{ $value }}" @selected($response->status === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        <button type="submit" class="inline-flex min-h-11 items-center rounded-[20px] bg-ink px-5 py-2 text-sm font-medium text-canvas transition hover:bg-ink/85">Update</button>
+                        <button type="submit" class="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 py-2 text-sm font-medium text-white transition hover:bg-brand/90">Update</button>
                     </form>
                 @endcan
             </div>
         </div>
 
         @if ($errors->has('status'))
-            <div role="alert" class="rounded-[20px] border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">{{ $errors->first('status') }}</div>
+            <div role="alert" class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">{{ $errors->first('status') }}</div>
         @endif
 
         <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <div class="flex min-w-0 flex-col gap-6">
                 @forelse ($answersBySection as $sectionTitle => $answers)
-                    <section class="flex flex-col gap-4 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8">
+                    <section class="flex flex-col gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8">
                         <h2 class="text-sm font-medium">{{ $sectionTitle }}</h2>
                         <dl class="flex flex-col divide-y divide-line/60">
                             @foreach ($answers as $answer)
@@ -70,14 +70,14 @@
                         </dl>
                     </section>
                 @empty
-                    <section class="rounded-[32px] border border-dashed border-line bg-paper p-8">
+                    <section class="rounded-2xl border border-dashed border-line bg-paper p-8">
                         <p class="text-sm text-muted">This response has no answers recorded.</p>
                     </section>
                 @endforelse
             </div>
 
             <div class="flex min-w-0 flex-col gap-6">
-                <section class="flex flex-col gap-5 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="candidate-heading">
+                <section class="flex flex-col gap-5 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="candidate-heading">
                     <h2 id="candidate-heading" class="text-sm font-medium">Candidate</h2>
                     @if ($response->candidate)
                         <dl class="flex flex-col gap-4">
@@ -96,7 +96,7 @@
                 </section>
 
                 @if ($response->application)
-                    <section class="flex flex-col gap-5 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="application-heading">
+                    <section class="flex flex-col gap-5 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="application-heading">
                         <h2 id="application-heading" class="text-sm font-medium">Application</h2>
                         <dl class="flex flex-col gap-4">
                             <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Status</dt><dd class="text-sm font-medium capitalize">{{ $response->application->status }}</dd></div>
@@ -109,7 +109,7 @@
                 @php($screening = $response->aiScreenings->sortByDesc('created_at')->first())
 
                 @if ($screening)
-                    <section class="flex flex-col gap-3 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="screening-heading">
+                    <section class="flex flex-col gap-3 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="screening-heading">
                         <h2 id="screening-heading" class="text-sm font-medium">Latest AI screening</h2>
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="rounded-full bg-canvas px-3 py-1 text-xs capitalize">{{ $screening->recommendation ?? $screening->status }}</span>
@@ -127,7 +127,7 @@
                     <form action="{{ route('job-postings.responses.destroy', [$jobPosting, $response]) }}" method="POST" onsubmit="return confirm('Delete this response? This cannot be undone.');">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-[20px] border border-red-200 px-5 py-2 text-sm text-red-800 transition hover:bg-red-50">Delete response</button>
+                        <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-red-200 px-5 py-2 text-sm text-red-800 transition hover:bg-red-50">Delete response</button>
                     </form>
                 @endcan
             </div>

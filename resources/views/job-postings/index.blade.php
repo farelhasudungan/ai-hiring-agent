@@ -2,12 +2,12 @@
     <div class="flex flex-col gap-8">
         <div class="flex flex-wrap items-end justify-between gap-6">
             <div class="flex min-w-0 flex-col gap-3">
-                <p class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted uppercase"><span class="size-2 rounded-full bg-accent" aria-hidden="true"></span>Hiring pipeline</p>
+                <p class="flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">Hiring pipeline</p>
                 <h1 class="text-3xl leading-tight font-medium tracking-tight wrap-anywhere sm:text-4xl">Job postings</h1>
                 <p class="text-sm leading-relaxed text-muted sm:text-base">Publish roles, keep requirements current, and track who applies.</p>
             </div>
             @can('create', App\Models\JobPosting::class)
-                <a href="{{ route('job-postings.create') }}" class="inline-flex min-h-12 items-center gap-4 rounded-[20px] bg-ink px-5 py-3 text-sm font-medium text-canvas transition hover:bg-ink/85">New job posting <span aria-hidden="true">↗</span></a>
+                <a href="{{ route('job-postings.create') }}" class="inline-flex min-h-12 items-center gap-4 rounded-xl bg-brand px-5 py-3 text-sm font-medium text-white transition hover:bg-brand/90">New job posting <span aria-hidden="true">↗</span></a>
             @endcan
         </div>
 
@@ -17,7 +17,7 @@
                 <a href="{{ route('job-postings.index', $filter === null ? [] : ['status' => $filter]) }}"
                     @if ($activeStatus === $filter) aria-current="page" @endif
                     @class([
-                        'inline-flex min-h-11 items-center gap-3 rounded-full border px-4 text-sm transition',
+                        'inline-flex min-h-11 items-center gap-3 rounded-xl border px-4 text-sm transition',
                         'border-ink bg-ink text-paper' => $activeStatus === $filter,
                         'border-line bg-paper text-muted hover:bg-canvas hover:text-ink' => $activeStatus !== $filter,
                     ])>
@@ -32,8 +32,8 @@
         </nav>
 
         @if ($jobPostings->isEmpty())
-            <section class="flex flex-col items-start gap-5 rounded-[32px] border border-dashed border-line bg-paper p-8 sm:p-12" aria-labelledby="empty-heading">
-                <span class="flex size-16 items-center justify-center rounded-[20px] bg-canvas text-3xl text-muted" aria-hidden="true">+</span>
+            <section class="flex flex-col items-start gap-5 rounded-2xl border border-dashed border-line bg-paper p-8 sm:p-12" aria-labelledby="empty-heading">
+                <span class="flex size-16 items-center justify-center rounded-xl bg-canvas text-3xl text-muted" aria-hidden="true">+</span>
                 <div class="flex flex-col gap-2">
                     <h2 id="empty-heading" class="text-2xl font-medium tracking-tight">{{ $activeStatus ? 'No '.$activeStatus.' roles' : 'No job postings yet' }}</h2>
                     <p class="max-w-lg text-sm leading-relaxed text-muted">
@@ -48,7 +48,7 @@
             <div class="-mx-4 sm:-mx-8 xl:-mx-12">
                 <div class="overflow-x-auto border-y border-line/60 bg-paper">
                     <table class="w-full text-left text-sm">
-                        <thead class="border-b border-line/60 text-[11px] tracking-widest text-muted uppercase">
+                        <thead class="border-b border-line/60 font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">
                             <tr>
                                 <th scope="col" class="px-4 py-4 font-semibold sm:px-8 xl:px-12">Role</th>
                                 <th scope="col" class="px-4 py-4 font-semibold sm:px-6">Status</th>

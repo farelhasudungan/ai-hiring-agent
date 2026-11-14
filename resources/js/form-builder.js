@@ -83,17 +83,17 @@ if (builder) {
             const label = document.createElement('input');
             label.name = `${prefix}[options][${index}][label]`;
             label.placeholder = 'Label';
-            label.className = 'min-h-11 w-full flex-1 rounded-[16px] border border-line bg-paper px-4 py-2 text-sm placeholder:text-muted/70';
+            label.className = 'min-h-11 w-full flex-1 rounded-xl border border-line bg-paper px-4 py-2 text-sm placeholder:text-muted/70';
 
             const value = document.createElement('input');
             value.name = `${prefix}[options][${index}][value]`;
             value.placeholder = 'Stored value (optional)';
-            value.className = 'min-h-11 w-full flex-1 rounded-[16px] border border-line bg-paper px-4 py-2 text-sm placeholder:text-muted/70';
+            value.className = 'min-h-11 w-full flex-1 rounded-xl border border-line bg-paper px-4 py-2 text-sm placeholder:text-muted/70';
 
             const remove = document.createElement('button');
             remove.type = 'button';
             remove.dataset.removeOption = '';
-            remove.className = 'flex size-8 shrink-0 items-center justify-center rounded-full border border-line text-xs transition hover:bg-canvas';
+            remove.className = 'flex size-8 shrink-0 items-center justify-center rounded-lg border border-line text-xs transition hover:bg-canvas';
             remove.setAttribute('aria-label', 'Remove option');
             remove.textContent = '×';
             remove.addEventListener('click', () => row.remove());

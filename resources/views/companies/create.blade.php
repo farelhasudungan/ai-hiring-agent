@@ -8,9 +8,9 @@
             <span class="font-medium text-ink">Company</span>
         </div>
 
-        <section class="flex flex-col gap-8 rounded-[40px] bg-paper p-8 sm:p-12" aria-labelledby="company-heading">
+        <section class="flex flex-col gap-8 rounded-2xl bg-paper p-8 sm:p-12" aria-labelledby="company-heading">
             <div class="flex flex-col gap-4">
-                <p class="flex items-center gap-2 text-xs font-bold tracking-widest uppercase"><span class="size-2 rounded-full bg-accent" aria-hidden="true"></span>A place for your people</p>
+                <p class="flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">A place for your people</p>
                 <h1 id="company-heading" class="max-w-lg text-4xl leading-tight font-medium tracking-tight sm:text-5xl">Let’s make it your company.</h1>
                 <p class="max-w-lg leading-relaxed text-muted">Give your workspace a name. You’ll become its admin, with a free plan to get started.</p>
             </div>

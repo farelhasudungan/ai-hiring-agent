@@ -4,7 +4,7 @@
     $selectedStatus = old('status', $isEdit ? $jobPosting->status : 'draft');
     $requiredSkills = old('required_skills', $isEdit ? implode(', ', $jobPosting->required_skills ?? []) : '');
     $niceToHave = old('nice_to_have', $isEdit ? implode(', ', $jobPosting->nice_to_have ?? []) : '');
-    $textareaClasses = 'w-full rounded-[20px] border bg-paper px-5 py-4 text-base leading-relaxed placeholder:text-muted/70';
+    $textareaClasses = 'w-full rounded-xl border bg-paper px-5 py-4 text-base leading-relaxed placeholder:text-muted/70';
 @endphp
 
 <form action="{{ $isEdit ? route('job-postings.update', $jobPosting) : route('job-postings.store') }}" method="POST" class="flex flex-col gap-6">
@@ -24,9 +24,9 @@
         <div class="flex flex-col gap-2">
             <label for="status" class="flex items-center gap-2 text-sm font-medium">
                 Status
-                <span class="text-accent" aria-hidden="true">*</span>
+                <span class="text-red-500" aria-hidden="true">*</span>
             </label>
-            <select id="status" name="status" required class="min-h-14 w-full rounded-[20px] border border-line bg-paper px-5 py-3 text-base">
+            <select id="status" name="status" required class="min-h-14 w-full rounded-xl border border-line bg-paper px-5 py-3 text-base">
                 @foreach (['draft' => 'Draft', 'open' => 'Open', 'closed' => 'Closed'] as $value => $label)
                     <option value="{{ $value }}" @selected($selectedStatus === $value)>{{ $label }}</option>
                 @endforeach
@@ -41,7 +41,7 @@
                 Application form
                 <span class="text-xs font-normal text-muted">Optional</span>
             </label>
-            <select id="form_id" name="form_id" class="min-h-14 w-full rounded-[20px] border border-line bg-paper px-5 py-3 text-base">
+            <select id="form_id" name="form_id" class="min-h-14 w-full rounded-xl border border-line bg-paper px-5 py-3 text-base">
                 <option value="">No form attached</option>
                 @foreach ($forms as $form)
                     <option value="{{ $form->id }}" @selected((string) $selectedFormId === (string) $form->id)>{{ $form->title }} ({{ $form->status }})</option>
@@ -57,7 +57,7 @@
     <div class="flex flex-col gap-2">
         <label for="description" class="flex items-center gap-2 text-sm font-medium">
             Description
-            <span class="text-accent" aria-hidden="true">*</span>
+            <span class="text-red-500" aria-hidden="true">*</span>
         </label>
         <textarea id="description" name="description" rows="6" required aria-invalid="{{ $errors->has('description') ? 'true' : 'false' }}" @if ($errors->has('description')) aria-describedby="description-error" @endif
             class="{{ $textareaClasses }} @error('description') border-red-700 @else border-line @enderror">{{ old('description', $isEdit ? $jobPosting->description : '') }}</textarea>

@@ -8,9 +8,9 @@
 
 <x-layout :title="$form->title">
     <div class="mx-auto flex w-full max-w-4xl flex-col gap-8">
-        <div class="flex flex-col gap-5 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8">
+        <div class="flex flex-col gap-5 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8">
             <div class="flex flex-col gap-3">
-                <p class="text-xs tracking-widest text-muted uppercase">{{ $form->company?->name ?? 'Application' }}</p>
+                <p class="font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">{{ $form->company?->name ?? 'Application' }}</p>
 
                 @if ($jobPosting)
                     <div class="flex flex-wrap items-center gap-2 text-sm text-muted">
@@ -41,7 +41,7 @@
         </div>
 
         @if ($errors->any())
-            <div role="alert" class="rounded-[20px] border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
+            <div role="alert" class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-800">
                 <p class="font-medium">Please check the highlighted questions and try again.</p>
                 @if ($errors->has('answers'))
                     <p class="mt-1">{{ $errors->first('answers') }}</p>
@@ -50,7 +50,7 @@
         @endif
 
         @if ($form->fields->isEmpty())
-            <section class="flex flex-col items-start gap-3 rounded-[32px] border border-dashed border-line bg-paper p-8">
+            <section class="flex flex-col items-start gap-3 rounded-2xl border border-dashed border-line bg-paper p-8">
                 <h2 class="text-xl font-medium tracking-tight">This application form is being prepared.</h2>
                 <p class="max-w-lg text-sm leading-relaxed text-muted">Please check back soon, or contact the hiring team if you were given this link directly.</p>
             </section>
@@ -59,7 +59,7 @@
                 @csrf
 
                 @foreach ($form->sections as $section)
-                    <section class="flex flex-col gap-5 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="public-section-{{ $section->id }}">
+                    <section class="flex flex-col gap-5 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="public-section-{{ $section->id }}">
                         <div class="flex flex-col gap-1">
                             <h2 id="public-section-{{ $section->id }}" class="text-lg font-medium tracking-tight">{{ $section->title }}</h2>
                             @if ($section->description)
@@ -76,7 +76,7 @@
                 @endforeach
 
                 @if ($unsectionedFields->isNotEmpty())
-                    <section class="flex flex-col gap-5 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8">
+                    <section class="flex flex-col gap-5 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8">
                         <h2 class="text-lg font-medium tracking-tight">Questions</h2>
                         <div class="flex flex-col gap-6">
                             @foreach ($unsectionedFields as $field)
@@ -86,9 +86,9 @@
                     </section>
                 @endif
 
-                <div class="flex flex-wrap items-center justify-between gap-4 rounded-[32px] border border-line/60 bg-paper p-6 sm:p-8">
-                    <p class="max-w-md text-xs leading-relaxed text-muted">Your answers will be shared with the hiring team. Fields marked <span class="text-accent">*</span> are required.</p>
-                    <button type="submit" class="inline-flex min-h-12 items-center gap-4 rounded-[20px] bg-ink px-6 py-3 text-sm font-medium text-canvas transition hover:bg-ink/85">Submit application <span aria-hidden="true">↗</span></button>
+                <div class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8">
+                    <p class="max-w-md text-xs leading-relaxed text-muted">Your answers will be shared with the hiring team. Fields marked <span class="text-red-500">*</span> are required.</p>
+                    <button type="submit" class="inline-flex min-h-12 items-center gap-4 rounded-xl bg-brand px-6 py-3 text-sm font-medium text-white transition hover:bg-brand/90">Submit application <span aria-hidden="true">↗</span></button>
                 </div>
             </form>
         @endif

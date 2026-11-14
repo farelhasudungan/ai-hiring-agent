@@ -22,24 +22,24 @@
     $hasError = fn (string $key): bool => $errors->has($errorPrefix.'.'.$key);
     $errorMessage = fn (string $key): ?string => $errors->first($errorPrefix.'.'.$key);
     $inputClasses = function (string $key, string $extra = '') use ($hasError): string {
-        return 'min-h-11 w-full rounded-[16px] border bg-paper px-4 py-2 text-sm placeholder:text-muted/70 '
+        return 'min-h-11 w-full rounded-xl border bg-paper px-4 py-2 text-sm placeholder:text-muted/70 '
             .($hasError($key) ? 'border-red-700' : 'border-line')
             .($extra !== '' ? ' '.$extra : '');
     };
 @endphp
 
-<div data-field @class(['flex flex-col gap-4 rounded-[24px] border bg-paper p-4', 'border-red-700' => $hasError('label') || $hasError('type') || $hasError('field_key'), 'border-line' => ! ($hasError('label') || $hasError('type') || $hasError('field_key'))])>
+<div data-field @class(['flex flex-col gap-4 rounded-2xl border bg-paper p-4', 'border-red-700' => $hasError('label') || $hasError('type') || $hasError('field_key'), 'border-line' => ! ($hasError('label') || $hasError('type') || $hasError('field_key'))])>
     <div class="flex flex-wrap items-center justify-between gap-2">
-        <p class="text-[11px] font-semibold tracking-widest text-muted uppercase">Question</p>
+        <p class="font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">Question</p>
         <div class="flex items-center gap-1">
-            <button type="button" data-move-field-up class="flex size-8 items-center justify-center rounded-full border border-line text-xs transition hover:bg-canvas" aria-label="Move question up">↑</button>
-            <button type="button" data-move-field-down class="flex size-8 items-center justify-center rounded-full border border-line text-xs transition hover:bg-canvas" aria-label="Move question down">↓</button>
-            <button type="button" data-remove-field class="ml-1 rounded-full px-3 py-1 text-xs text-red-800 transition hover:bg-red-50">Remove</button>
+            <button type="button" data-move-field-up class="flex size-8 items-center justify-center rounded-lg border border-line text-xs transition hover:bg-canvas" aria-label="Move question up">↑</button>
+            <button type="button" data-move-field-down class="flex size-8 items-center justify-center rounded-lg border border-line text-xs transition hover:bg-canvas" aria-label="Move question down">↓</button>
+            <button type="button" data-remove-field class="ml-1 rounded-xl px-3 py-1 text-xs text-red-800 transition hover:bg-red-50">Remove</button>
         </div>
     </div>
 
     @error($errorPrefix.'.id')
-        <p role="alert" class="rounded-[12px] bg-red-50 px-3 py-2 text-xs text-red-800">{{ $message }}</p>
+        <p role="alert" class="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-800">{{ $message }}</p>
     @enderror
 
     @if ($field?->id)
@@ -48,7 +48,7 @@
 
     <div class="grid gap-4 md:grid-cols-2">
         <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium">Label <span class="text-accent" aria-hidden="true">*</span></label>
+            <label class="text-xs font-medium">Label <span class="text-red-500" aria-hidden="true">*</span></label>
             <input name="{{ $prefix }}[label]" value="{{ $field?->label }}" placeholder="e.g. Full name" data-field-label
                 aria-invalid="{{ $hasError('label') ? 'true' : 'false' }}"
                 @if ($hasError('label')) aria-describedby="{{ $errorIdPrefix }}-label-error" @endif
@@ -58,7 +58,7 @@
             @endif
         </div>
         <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-medium">Type <span class="text-accent" aria-hidden="true">*</span></label>
+            <label class="text-xs font-medium">Type <span class="text-red-500" aria-hidden="true">*</span></label>
             <select name="{{ $prefix }}[type]" data-field-type
                 aria-invalid="{{ $hasError('type') ? 'true' : 'false' }}"
                 @if ($hasError('type')) aria-describedby="{{ $errorIdPrefix }}-type-error" @endif
@@ -149,7 +149,7 @@
                             aria-invalid="{{ $hasError($optionValueKey) ? 'true' : 'false' }}"
                             @if ($hasError($optionValueKey)) aria-describedby="{{ $errorIdPrefix }}-option-{{ $optionIndex }}-value-error" @endif
                             class="{{ $inputClasses($optionValueKey, 'flex-1') }}">
-                        <button type="button" data-remove-option class="flex size-8 shrink-0 items-center justify-center rounded-full border border-line text-xs transition hover:bg-canvas" aria-label="Remove option">×</button>
+                        <button type="button" data-remove-option class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line text-xs transition hover:bg-canvas" aria-label="Remove option">×</button>
                     </div>
                     @if ($hasError($optionLabelKey))
                         <p id="{{ $errorIdPrefix }}-option-{{ $optionIndex }}-label-error" role="alert" class="text-xs text-red-800">{{ $errorMessage($optionLabelKey) }}</p>
@@ -160,7 +160,7 @@
                 </div>
             @endforeach
         </div>
-        <button type="button" data-add-option class="inline-flex w-fit min-h-9 items-center rounded-full border border-line px-3 py-1 text-xs transition hover:bg-canvas">Add option</button>
+        <button type="button" data-add-option class="inline-flex w-fit min-h-9 items-center rounded-xl border border-line px-3 py-1 text-xs transition hover:bg-canvas">Add option</button>
         <p class="text-[11px] text-muted">Options apply to multiple choice, checkboxes, and dropdown fields.</p>
     </div>
 </div>

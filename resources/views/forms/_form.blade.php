@@ -15,7 +15,7 @@
             Description
             <span class="text-xs font-normal text-muted">Optional</span>
         </label>
-        <textarea id="description" name="description" rows="3" class="w-full rounded-[20px] border border-line bg-paper px-5 py-4 text-base leading-relaxed placeholder:text-muted/70">{{ old('description', $isEdit ? $form->description : '') }}</textarea>
+        <textarea id="description" name="description" rows="3" class="w-full rounded-xl border border-line bg-paper px-5 py-4 text-base leading-relaxed placeholder:text-muted/70">{{ old('description', $isEdit ? $form->description : '') }}</textarea>
         @error('description')
             <p role="alert" class="text-sm text-red-800">{{ $message }}</p>
         @enderror
@@ -25,9 +25,9 @@
         <div class="flex flex-col gap-2">
             <label for="status" class="flex items-center gap-2 text-sm font-medium">
                 Status
-                <span class="text-accent" aria-hidden="true">*</span>
+                <span class="text-red-500" aria-hidden="true">*</span>
             </label>
-            <select id="status" name="status" required class="min-h-14 w-full rounded-[20px] border border-line bg-paper px-5 py-3 text-base">
+            <select id="status" name="status" required class="min-h-14 w-full rounded-xl border border-line bg-paper px-5 py-3 text-base">
                 @foreach (['draft' => 'Draft', 'published' => 'Published', 'closed' => 'Closed'] as $value => $label)
                     <option value="{{ $value }}" @selected(old('status', $isEdit ? $form->status : 'draft') === $value)>{{ $label }}</option>
                 @endforeach
@@ -42,7 +42,7 @@
                 Closes at
                 <span class="text-xs font-normal text-muted">Optional</span>
             </label>
-            <input id="closes_at" name="closes_at" type="datetime-local" value="{{ old('closes_at', $isEdit && $form->closes_at ? $form->closes_at->format('Y-m-d\TH:i') : '') }}" class="min-h-14 w-full rounded-[20px] border border-line bg-paper px-5 py-3 text-base">
+            <input id="closes_at" name="closes_at" type="datetime-local" value="{{ old('closes_at', $isEdit && $form->closes_at ? $form->closes_at->format('Y-m-d\TH:i') : '') }}" class="min-h-14 w-full rounded-xl border border-line bg-paper px-5 py-3 text-base">
             @error('closes_at')
                 <p role="alert" class="text-sm text-red-800">{{ $message }}</p>
             @enderror
@@ -54,7 +54,7 @@
             Confirmation message
             <span class="text-xs font-normal text-muted">Optional</span>
         </label>
-        <textarea id="confirmation_message" name="confirmation_message" rows="3" maxlength="1000" placeholder="Thank you for applying. We will review your submission shortly." class="w-full rounded-[20px] border border-line bg-paper px-5 py-4 text-base leading-relaxed placeholder:text-muted/70">{{ old('confirmation_message', $isEdit ? ($form->settings['confirmation_message'] ?? '') : '') }}</textarea>
+        <textarea id="confirmation_message" name="confirmation_message" rows="3" maxlength="1000" placeholder="Thank you for applying. We will review your submission shortly." class="w-full rounded-xl border border-line bg-paper px-5 py-4 text-base leading-relaxed placeholder:text-muted/70">{{ old('confirmation_message', $isEdit ? ($form->settings['confirmation_message'] ?? '') : '') }}</textarea>
         <p class="text-xs text-muted">Shown to candidates after they submit this form.</p>
         @error('confirmation_message')
             <p role="alert" class="text-sm text-red-800">{{ $message }}</p>

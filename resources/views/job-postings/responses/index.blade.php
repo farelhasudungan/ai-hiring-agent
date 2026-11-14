@@ -5,7 +5,7 @@
 
             <div class="flex flex-wrap items-end justify-between gap-6">
                 <div class="flex min-w-0 flex-col gap-3">
-                    <p class="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted uppercase"><span class="size-2 rounded-full bg-accent" aria-hidden="true"></span>Form responses</p>
+                    <p class="flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">Form responses</p>
                     <h1 class="text-3xl leading-tight font-medium tracking-tight wrap-anywhere sm:text-4xl">{{ $jobPosting->title }}</h1>
                     <p class="text-sm leading-relaxed text-muted">
                         {{ $jobPosting->form?->title ?? 'No form attached' }}
@@ -13,7 +13,7 @@
                     </p>
                 </div>
                 @if ($jobPosting->form)
-                    <a href="{{ route('forms.show', $jobPosting->form) }}" class="inline-flex min-h-12 items-center gap-3 rounded-[20px] border border-line bg-paper px-5 py-3 text-sm font-medium transition hover:bg-canvas">View form</a>
+                    <a href="{{ route('forms.show', $jobPosting->form) }}" class="inline-flex min-h-12 items-center gap-3 rounded-xl border border-line bg-paper px-5 py-3 text-sm font-medium transition hover:bg-canvas">View form</a>
                 @endif
             </div>
         </div>
@@ -24,7 +24,7 @@
                 <a href="{{ route('job-postings.responses.index', array_filter(['jobPosting' => $jobPosting, 'status' => $filter])) }}"
                     @if ($activeStatus === $filter) aria-current="page" @endif
                     @class([
-                        'inline-flex min-h-11 items-center gap-3 rounded-full border px-4 text-sm transition',
+                        'inline-flex min-h-11 items-center gap-3 rounded-xl border px-4 text-sm transition',
                         'border-ink bg-ink text-paper' => $activeStatus === $filter,
                         'border-line bg-paper text-muted hover:bg-canvas hover:text-ink' => $activeStatus !== $filter,
                     ])>
@@ -39,18 +39,18 @@
         </nav>
 
         @if ($responses->isEmpty())
-            <section class="flex flex-col items-start gap-5 rounded-[32px] border border-dashed border-line bg-paper p-8 sm:p-12" aria-labelledby="empty-responses-heading">
-                <span class="flex size-16 items-center justify-center rounded-[20px] bg-canvas text-3xl text-muted" aria-hidden="true">+</span>
+            <section class="flex flex-col items-start gap-5 rounded-2xl border border-dashed border-line bg-paper p-8 sm:p-12" aria-labelledby="empty-responses-heading">
+                <span class="flex size-16 items-center justify-center rounded-xl bg-canvas text-3xl text-muted" aria-hidden="true">+</span>
                 <div class="flex flex-col gap-2">
                     <h2 id="empty-responses-heading" class="text-2xl font-medium tracking-tight">{{ $activeStatus ? 'No '.$activeStatus.' responses' : 'No responses yet' }}</h2>
                     <p class="max-w-lg text-sm leading-relaxed text-muted">{{ $activeStatus ? 'Try a different status filter.' : 'When candidates submit the application form, their responses will appear here.' }}</p>
                 </div>
             </section>
         @else
-            <div class="overflow-hidden rounded-[32px] border border-line/60 bg-paper">
+            <div class="overflow-hidden rounded-2xl border border-line/60 bg-paper">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
-                        <thead class="border-b border-line/60 text-[11px] tracking-widest text-muted uppercase">
+                        <thead class="border-b border-line/60 font-mono text-[11px] tracking-[0.1em] text-zinc-400 uppercase">
                             <tr>
                                 <th scope="col" class="px-6 py-4 font-semibold">Candidate</th>
                                 <th scope="col" class="px-6 py-4 font-semibold">Status</th>

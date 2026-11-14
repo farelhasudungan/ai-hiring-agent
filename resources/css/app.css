@@ -4,18 +4,19 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --color-canvas: #f3f0ee;
-    --color-paper: #fcfbfa;
-    --color-ink: #141413;
-    --color-muted: #696969;
-    --color-line: #d1cdc7;
-    --color-accent: #cf4500;
-    --color-orbit: #f37338;
+    --color-canvas: #fafafa;
+    --color-paper: #ffffff;
+    --color-ink: #000000;
+    --color-muted: #71717a;
+    --color-line: #e4e4e7;
+    --color-accent: #2563eb;
+    --color-orbit: #93c5fd;
     --color-brand: #2563eb;
     --font-geist: 'Geist', ui-sans-serif, system-ui, sans-serif;
     --font-geist-mono: 'Geist Mono', 'Liberation Mono', ui-monospace, monospace;
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-mono: 'Geist Mono', 'Liberation Mono', ui-monospace, monospace;
 }
 
 @layer base {
