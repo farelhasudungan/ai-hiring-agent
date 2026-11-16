@@ -274,3 +274,21 @@ test('the candidate page is limited to the same company and the same job', funct
     $this->actingAs($user)->get(route('job-postings.candidates.show', [$otherJob, $application]))->assertNotFound();
     $this->actingAs($user)->get(route('job-postings.candidates.show', [$foreign, $foreignApplication]))->assertForbidden();
 });
+
+test('a scored candidate can be selected again but is skipped by run on all', function () {
+    Queue::fake();
+    $user = User::factory()->create(['role' => 'hr']);
+    AiProviderSetting::factory()->for($user->company)->forProvider('openrouter', 'openai/gpt-4o-mini')->create();
+    $job = JobPosting::factory()->for($user->company)->create();
+    $scored = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'scored']);
+    ApplicationDocument::factory()->for($scored)->create(['parsing_status' => 'success', 'parsed_text' => 'CV text']);
+    $fresh = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'received']);
+    ApplicationDocument::factory()->for($fresh)->create(['parsing_status' => 'success', 'parsed_text' => 'CV text']);
+
+    $this->actingAs($user)->post(route('job-postings.screening.store', $job));
+    Queue::assertPushed(ScreenApplication::class, 1);
+    Queue::assertPushed(ScreenApplication::class, fn (ScreenApplication $queued) => $queued->application->is($fresh));
+
+    $this->actingAs($user)->post(route('job-postings.screening.store', $job), ['application_ids' => [$scored->id]]);
+    Queue::assertPushed(ScreenApplication::class, fn (ScreenApplication $queued) => $queued->application->is($scored));
+});

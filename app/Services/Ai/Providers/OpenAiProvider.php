@@ -4,24 +4,17 @@ namespace App\Services\Ai\Providers;
 
 use App\Services\Ai\Data\AiResponse;
 use App\Services\Ai\Exceptions\AiProviderException;
+use Generator;
 
 class OpenAiProvider extends HttpAiProvider
 {
     public function complete(string $systemPrompt, string $userPrompt, string $model, string $apiKey, int $maxTokens = 1024): AiResponse
     {
-        $messages = [];
-
-        if ($systemPrompt !== '') {
-            $messages[] = ['role' => 'system', 'content' => $systemPrompt];
-        }
-
-        $messages[] = ['role' => 'user', 'content' => $userPrompt];
-
-        $body = $this->send($this->client()->withToken($apiKey), '/chat/completions', [
-            'model' => $model,
-            $this->tokenLimitField() => $maxTokens,
-            'messages' => $messages,
-        ]);
+        $body = $this->send(
+            $this->client()->withToken($apiKey),
+            '/chat/completions',
+            $this->payload($systemPrompt, $userPrompt, $model, $maxTokens),
+        );
 
         $text = data_get($body, 'choices.0.message.content');
 
@@ -35,6 +28,56 @@ class OpenAiProvider extends HttpAiProvider
             inputTokens: data_get($body, 'usage.prompt_tokens'),
             outputTokens: data_get($body, 'usage.completion_tokens'),
         );
+    }
+
+    public function stream(string $systemPrompt, string $userPrompt, string $model, string $apiKey, int $maxTokens = 1024): Generator
+    {
+        $events = $this->streamData(
+            $this->client()->withToken($apiKey),
+            '/chat/completions',
+            $this->payload($systemPrompt, $userPrompt, $model, $maxTokens) + ['stream' => true],
+        );
+
+        return $this->requireChunks($this->textChunks($events));
+    }
+
+    /**
+     * @param  Generator<int, string>  $events
+     * @return Generator<int, string>
+     */
+    private function textChunks(Generator $events): Generator
+    {
+        foreach ($events as $event) {
+            if ($event === '[DONE]') {
+                return;
+            }
+
+            $text = data_get(json_decode($event, true), 'choices.0.delta.content');
+
+            if (is_string($text)) {
+                yield $text;
+            }
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payload(string $systemPrompt, string $userPrompt, string $model, int $maxTokens): array
+    {
+        $messages = [];
+
+        if ($systemPrompt !== '') {
+            $messages[] = ['role' => 'system', 'content' => $systemPrompt];
+        }
+
+        $messages[] = ['role' => 'user', 'content' => $userPrompt];
+
+        return [
+            'model' => $model,
+            $this->tokenLimitField() => $maxTokens,
+            'messages' => $messages,
+        ];
     }
 
     /**

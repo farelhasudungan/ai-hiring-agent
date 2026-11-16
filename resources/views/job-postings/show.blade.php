@@ -62,7 +62,7 @@
                     @csrf
                     <ul class="flex flex-col divide-y divide-line/60">
                         @foreach ($applications as $application)
-                            @php($canScreen = in_array($application->status, \App\Models\Application::SCREENABLE_STATUSES, true) && $application->documents->contains(fn ($document) => $document->parsing_status === 'success' && $document->parsed_text !== null))
+                            @php($canScreen = in_array($application->status, \App\Models\Application::SELECTABLE_STATUSES, true) && $application->documents->contains(fn ($document) => $document->parsing_status === 'success' && $document->parsed_text !== null))
                             <li class="flex items-center gap-4 py-3">
                                 @can('update', $jobPosting)
                                     <input type="checkbox" name="application_ids[]" value="{{ $application->id }}" id="application-{{ $application->id }}" @disabled(! $canScreen) class="size-5 rounded border-line disabled:opacity-40" aria-label="Select {{ $application->full_name ?? 'candidate '.$application->id }}">

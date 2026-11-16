@@ -63,14 +63,14 @@ class JobPosting extends Model
 
     /**
      * Applications whose resume is parsed and that still wait for (or failed)
-     * an AI screening.
+     * an AI screening. With $includeScored, scored candidates qualify for a re-run.
      *
      * @return HasMany<Application, $this>
      */
-    public function screenableApplications(): HasMany
+    public function screenableApplications(bool $includeScored = false): HasMany
     {
         return $this->applications()
-            ->whereIn('status', Application::SCREENABLE_STATUSES)
+            ->whereIn('status', $includeScored ? Application::SELECTABLE_STATUSES : Application::SCREENABLE_STATUSES)
             ->whereHas('documents', fn ($query) => $query->where('parsing_status', 'success')->whereNotNull('parsed_text'));
     }
 

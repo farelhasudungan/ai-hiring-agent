@@ -24,13 +24,13 @@ class ScreeningController extends Controller
 
         $started = 0;
 
-        $jobPosting->screenableApplications()
+        $jobPosting->screenableApplications(includeScored: $request->filled('application_ids'))
             ->when($request->validated('application_ids'), fn ($query, array $ids) => $query->whereKey($ids))
             ->get()
             ->each(function (Application $application) use (&$started): void {
                 $claimed = Application::query()
                     ->whereKey($application->id)
-                    ->whereIn('status', Application::SCREENABLE_STATUSES)
+                    ->whereIn('status', Application::SELECTABLE_STATUSES)
                     ->update(['status' => 'analyzing', 'latest_ai_status' => 'queued']);
 
                 if ($claimed === 1) {

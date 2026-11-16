@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AiSettingController;
 use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobPostingController;
@@ -34,5 +35,9 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/settings/ai/test', [AiSettingController::class, 'test'])->middleware('throttle:ai-connection-test')->name('settings.ai.test');
     Route::post('job-postings/{jobPosting}/intake/pdf', [PdfIntakeController::class, 'store'])->name('job-postings.intake.pdf');
     Route::get('job-postings/{jobPosting}/candidates/{application}', [CandidateController::class, 'show'])->scopeBindings()->name('job-postings.candidates.show');
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+    Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
+    Route::post('/chat/{conversation}/messages', [ChatController::class, 'storeMessage'])->middleware('throttle:ai-chat')->name('chat.messages.store');
     Route::post('job-postings/{jobPosting}/screening', [ScreeningController::class, 'store'])->name('job-postings.screening.store');
 });

@@ -1,4 +1,4 @@
-@props(['title'])
+@props(['title', 'flush' => false])
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -32,7 +32,7 @@
                 </div>
             </header>
 
-            <main id="main-content" class="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-8 sm:py-10 xl:px-12" tabindex="-1">
+            <main id="main-content" @class(['flex flex-col', 'mx-auto max-w-7xl gap-6 px-4 py-8 sm:px-8 sm:py-10 xl:px-12' => ! $flush, 'h-[calc(100dvh-5rem)] overflow-hidden' => $flush]) tabindex="-1">
                 {{ $slot }}
             </main>
         </div>

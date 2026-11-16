@@ -1,7 +1,7 @@
 @php
     $name = $application->full_name ?? $application->documents->first()?->origin_name ?? $application->documents->first()?->file_name ?? 'Candidate #'.$application->id;
     $result = $screening?->parsed_response ?? [];
-    $canScreen = in_array($application->status, \App\Models\Application::SCREENABLE_STATUSES, true)
+    $canScreen = in_array($application->status, \App\Models\Application::SELECTABLE_STATUSES, true)
         && $application->documents->contains(fn ($document) => $document->parsing_status === 'success' && $document->parsed_text !== null);
     $recommendationStyles = [
         'strong_match' => 'bg-green-50 text-green-800',
@@ -32,7 +32,7 @@
                         <form action="{{ route('job-postings.screening.store', $jobPosting) }}" method="POST">
                             @csrf
                             <input type="hidden" name="application_ids[]" value="{{ $application->id }}">
-                            <button type="submit" class="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 text-sm font-medium text-white transition hover:bg-brand/90">{{ $application->status === 'failed' ? 'Retry AI screening' : 'Run AI screening' }}</button>
+                            <button type="submit" class="inline-flex min-h-11 items-center rounded-xl bg-brand px-5 text-sm font-medium text-white transition hover:bg-brand/90">{{ match ($application->status) { 'failed' => 'Retry AI screening', 'scored' => 'Run AI screening again', default => 'Run AI screening' } }}</button>
                         </form>
                     @endif
                 @endcan

@@ -32,11 +32,19 @@ class Application extends Model
     use HasFactory;
 
     /**
-     * Statuses from which an AI screening can be started by the user.
+     * Statuses of applications still waiting for their first (or a retried) AI screening.
      *
      * @var list<string>
      */
-    public const SCREENABLE_STATUSES = ['queued', 'failed'];
+    public const SCREENABLE_STATUSES = ['received', 'queued', 'failed'];
+
+    /**
+     * Statuses from which a user can explicitly start a screening, which also
+     * allows running an already scored candidate again.
+     *
+     * @var list<string>
+     */
+    public const SELECTABLE_STATUSES = ['received', 'queued', 'failed', 'scored'];
 
     /**
      * Get the attributes that should be cast.

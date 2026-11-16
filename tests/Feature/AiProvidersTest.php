@@ -135,3 +135,51 @@ test('listing models surfaces provider errors safely', function () {
 
     app(AiProviderManager::class)->driver('openai')->listModels('secret-key');
 })->throws(AiProviderException::class, 'The provider rejected the API key.');
+
+/**
+ * @return array<string, array{0: string, 1: string, 2: string, 3: string}>
+ */
+dataset('streaming providers', [
+    'openai' => ['openai', 'https://api.openai.com/v1/chat/completions', 'gpt-4o-mini',
+        "data: {\"choices\":[{\"delta\":{\"role\":\"assistant\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"Hel\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"lo\"}}]}\n\ndata: [DONE]\n\n"],
+    'openrouter' => ['openrouter', 'https://openrouter.ai/api/v1/chat/completions', 'openai/gpt-4o-mini',
+        ": OPENROUTER PROCESSING\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"Hel\"}}]}\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"lo\"}}]}\n\ndata: [DONE]\n\n"],
+    'claude' => ['claude', 'https://api.anthropic.com/v1/messages', 'claude-haiku-5-5',
+        "event: message_start\ndata: {\"type\":\"message_start\"}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hel\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"lo\"}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"],
+    'gemini' => ['gemini', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent*', 'gemini-2.0-flash',
+        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hel\"}]}}]}\r\n\r\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"lo\"}]}}]}\r\n\r\n"],
+]);
+
+test('each provider streams text chunks from server sent events', function (string $provider, string $url, string $model, string $stream) {
+    Http::fake([$url => Http::response($stream, 200, ['Content-Type' => 'text/event-stream'])]);
+
+    $chunks = iterator_to_array(app(AiProviderManager::class)->driver($provider)->stream('Be brief.', 'Say hello', $model, 'secret-key', 50), false);
+
+    expect(implode('', $chunks))->toBe('Hello');
+
+    Http::assertSent(fn (Request $request) => str_contains($request->body(), 'Say hello')
+        && ! str_contains($request->url(), 'secret-key'));
+})->with('streaming providers');
+
+test('a stream without any text fails as an empty response', function () {
+    Http::fake(['https://api.openai.com/v1/chat/completions' => Http::response("data: [DONE]\n\n")]);
+
+    iterator_to_array(app(AiProviderManager::class)->driver('openai')->stream('', 'Hi', 'gpt-4o-mini', 'key'));
+})->throws(AiProviderException::class);
+
+test('a rejected stream request surfaces the provider error', function () {
+    Http::fake(['https://api.openai.com/v1/chat/completions' => Http::response('', 401)]);
+
+    iterator_to_array(app(AiProviderManager::class)->driver('openai')->stream('', 'Hi', 'gpt-4o-mini', 'key'));
+})->throws(AiProviderException::class, 'rejected the API key');
+
+test('the ai service streams with the company provider and requires a setting', function () {
+    $company = Company::factory()->create();
+
+    expect(fn () => app(AiService::class)->stream($company, '', 'Hi'))->toThrow(DomainException::class);
+
+    AiProviderSetting::factory()->forProvider('openai', 'gpt-4o-mini')->for($company)->create();
+    Http::fake(['https://api.openai.com/v1/chat/completions' => Http::response("data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\ndata: [DONE]\n\n")]);
+
+    expect(implode('', iterator_to_array(app(AiService::class)->stream($company->fresh(), '', 'Hi'), false)))->toBe('Hi');
+});

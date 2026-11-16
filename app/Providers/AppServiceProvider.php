@@ -33,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('ai-connection-test', fn (Request $request): Limit => Limit::perMinute(10)->by((string) $request->user()?->id));
 
+        RateLimiter::for('ai-chat', fn (Request $request): Limit => Limit::perMinute(20)->by((string) $request->user()?->id));
+
         RateLimiter::for('registration', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
     }
 }
