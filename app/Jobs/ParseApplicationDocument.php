@@ -34,6 +34,7 @@ class ParseApplicationDocument implements ShouldQueue
                 'error_message' => null,
             ]);
             $this->document->application->update(['status' => 'queued']);
+            ScreenApplication::dispatch($this->document->application);
         } catch (RuntimeException $exception) {
             $this->document->update([
                 'parsing_status' => 'failed',
