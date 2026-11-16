@@ -121,3 +121,55 @@ const toastRegion = document.getElementById('toast-region');
 if (toastRegion) {
     JSON.parse(toastRegion.dataset.toasts || '[]').forEach(({ type, message }) => showToast(type, message));
 }
+
+document.querySelectorAll('[data-dropzone]').forEach((zone) => {
+    const input = zone.querySelector('input[type="file"]');
+    const summary = zone.querySelector('[data-dropzone-summary]');
+    const highlight = ['border-ink', 'bg-zinc-50'];
+    const allowed = /\.(pdf|zip)$/i;
+
+    const updateSummary = () => {
+        const names = Array.from(input.files).map((file) => file.name);
+        summary.textContent = names.length === 0
+            ? ''
+            : names.length <= 3 ? names.join(', ') : `${names.length} files selected`;
+    };
+
+    input.addEventListener('change', updateSummary);
+
+    ['dragenter', 'dragover'].forEach((type) => {
+        zone.addEventListener(type, (event) => {
+            event.preventDefault();
+            zone.classList.add(...highlight);
+        });
+    });
+
+    ['dragleave', 'dragend'].forEach((type) => {
+        zone.addEventListener(type, () => zone.classList.remove(...highlight));
+    });
+
+    zone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        zone.classList.remove(...highlight);
+
+        const dropped = Array.from(event.dataTransfer.files);
+        const accepted = dropped.filter((file) => allowed.test(file.name));
+        const transfer = new DataTransfer();
+
+        accepted.forEach((file) => transfer.items.add(file));
+        input.files = transfer.files;
+        updateSummary();
+
+        if (accepted.length < dropped.length) {
+            summary.textContent = `${summary.textContent} (${dropped.length - accepted.length} non-PDF/ZIP file(s) ignored)`.trim();
+        }
+    });
+});
+
+['dragover', 'drop'].forEach((type) => {
+    window.addEventListener(type, (event) => {
+        if (!event.target.closest('[data-dropzone]')) {
+            event.preventDefault();
+        }
+    });
+});

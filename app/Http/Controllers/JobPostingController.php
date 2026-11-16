@@ -51,7 +51,11 @@ class JobPostingController extends Controller
     {
         Gate::authorize('view', $jobPosting);
 
-        return view('job-postings.show', ['jobPosting' => $jobPosting->loadCount('applications')]);
+        return view('job-postings.show', [
+            'jobPosting' => $jobPosting->loadCount('applications'),
+            'screenableCount' => $jobPosting->screenableApplications()->count(),
+            'applications' => $jobPosting->applications()->with('documents')->latest()->paginate(15)->withQueryString(),
+        ]);
     }
 
     public function edit(JobPosting $jobPosting): View

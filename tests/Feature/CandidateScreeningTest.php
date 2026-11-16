@@ -2,13 +2,16 @@
 
 use App\Jobs\ScreenApplication;
 use App\Models\AiProviderSetting;
+use App\Models\AiScreening;
 use App\Models\Application;
 use App\Models\ApplicationDocument;
 use App\Models\Company;
 use App\Models\JobPosting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 uses(LazilyRefreshDatabase::class);
@@ -157,4 +160,117 @@ test('a company without an ai provider is marked failed without retrying', funct
     expect($application->fresh()->status)->toBe('failed')
         ->and($application->fresh()->latest_ai_status)->toBe('failed');
     Http::assertNothingSent();
+});
+
+test('screening only starts when the user triggers it, for parsed applications of that job', function () {
+    Queue::fake();
+    $user = User::factory()->create(['role' => 'hr']);
+    AiProviderSetting::factory()->for($user->company)->forProvider('openrouter', 'openai/gpt-4o-mini')->create();
+    $job = JobPosting::factory()->for($user->company)->create();
+
+    $ready = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'queued']);
+    ApplicationDocument::factory()->for($ready)->create(['parsing_status' => 'success', 'parsed_text' => 'CV text']);
+    $unparsed = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'failed']);
+    ApplicationDocument::factory()->for($unparsed)->create(['parsing_status' => 'failed']);
+    $scored = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'scored']);
+    ApplicationDocument::factory()->for($scored)->create(['parsing_status' => 'success', 'parsed_text' => 'CV text']);
+
+    $this->actingAs($user)->post(route('job-postings.screening.store', $job))
+        ->assertRedirectToRoute('job-postings.show', $job)->assertSessionHas('status');
+
+    Queue::assertPushed(ScreenApplication::class, 1);
+    Queue::assertPushed(ScreenApplication::class, fn (ScreenApplication $queued) => $queued->application->is($ready));
+    expect($ready->fresh()->status)->toBe('analyzing');
+
+    $this->actingAs($user)->post(route('job-postings.screening.store', $job));
+    Queue::assertPushed(ScreenApplication::class, 1);
+});
+
+test('screening cannot start without an ai provider or for another company', function () {
+    Queue::fake();
+    $user = User::factory()->create(['role' => 'hr']);
+    $job = JobPosting::factory()->for($user->company)->create();
+    $foreign = JobPosting::factory()->create();
+
+    $this->actingAs($user)->post(route('job-postings.screening.store', $job))->assertSessionHasErrors('screening');
+    $this->actingAs($user)->post(route('job-postings.screening.store', $foreign))->assertForbidden();
+
+    Queue::assertNothingPushed();
+});
+
+test('only the selected applications are screened', function () {
+    Queue::fake();
+    $user = User::factory()->create(['role' => 'hr']);
+    AiProviderSetting::factory()->for($user->company)->forProvider('openrouter', 'openai/gpt-4o-mini')->create();
+    $job = JobPosting::factory()->for($user->company)->create();
+
+    [$first, $second] = collect(range(1, 2))->map(function () use ($user, $job) {
+        $application = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'queued']);
+        ApplicationDocument::factory()->for($application)->create(['parsing_status' => 'success', 'parsed_text' => 'CV text']);
+
+        return $application;
+    })->all();
+
+    $this->actingAs($user)->post(route('job-postings.screening.store', $job), ['application_ids' => [$first->id]]);
+
+    Queue::assertPushed(ScreenApplication::class, 1);
+    Queue::assertPushed(ScreenApplication::class, fn (ScreenApplication $queued) => $queued->application->is($first));
+    expect($second->fresh()->status)->toBe('queued');
+});
+
+test('the job page lists candidates with selection checkboxes', function () {
+    $user = User::factory()->create(['role' => 'hr']);
+    $job = JobPosting::factory()->for($user->company)->create();
+    $application = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'queued', 'full_name' => 'Jane Doe']);
+    ApplicationDocument::factory()->for($application)->create(['parsing_status' => 'success', 'parsed_text' => 'CV text']);
+
+    $this->actingAs($user)->get(route('job-postings.show', $job))
+        ->assertOk()->assertSee('Jane Doe')->assertSee('name="application_ids[]"', false)->assertSee('Run AI on selected');
+});
+
+test('the candidate page shows the screening result and the raw markdown', function () {
+    Storage::fake('local');
+    $user = User::factory()->create(['role' => 'hr']);
+    $job = JobPosting::factory()->for($user->company)->create();
+    $application = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'scored', 'full_name' => 'Jane Doe']);
+    $screening = AiScreening::factory()->create([
+        'application_id' => $application->id,
+        'job_id' => $job->id,
+        'status' => 'success',
+        'match_score' => 82,
+        'recommendation' => 'shortlist',
+        'parsed_response' => ['summary' => 'Strong Laravel background.', 'strengths' => ['APIs'], 'gaps' => ['No Docker']],
+        'matched_skills' => ['PHP'],
+    ]);
+    Storage::disk('local')->put($screening->summaryPathForStorage(), '<script>alert(1)</script> raw reply');
+    $screening->update(['summary_path' => $screening->summaryPathForStorage()]);
+
+    $this->actingAs($user)->get(route('job-postings.candidates.show', [$job, $application]))
+        ->assertOk()
+        ->assertSee('Jane Doe')->assertSee('82')->assertSee('Strong Laravel background.')
+        ->assertSee('APIs')->assertSee('No Docker')->assertSee('shortlist')
+        ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt; raw reply', false)
+        ->assertDontSee('<script>alert(1)</script>', false);
+});
+
+test('the candidate page shows a failed screening reason', function () {
+    $user = User::factory()->create(['role' => 'hr']);
+    $job = JobPosting::factory()->for($user->company)->create();
+    $application = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id, 'status' => 'failed']);
+    AiScreening::factory()->create(['application_id' => $application->id, 'job_id' => $job->id, 'status' => 'failed', 'error_message' => 'The provider rejected the API key.']);
+
+    $this->actingAs($user)->get(route('job-postings.candidates.show', [$job, $application]))
+        ->assertOk()->assertSee('The provider rejected the API key.');
+});
+
+test('the candidate page is limited to the same company and the same job', function () {
+    $user = User::factory()->create(['role' => 'hr']);
+    $job = JobPosting::factory()->for($user->company)->create();
+    $otherJob = JobPosting::factory()->for($user->company)->create();
+    $foreign = JobPosting::factory()->create();
+    $application = Application::factory()->create(['company_id' => $user->company_id, 'job_id' => $job->id]);
+    $foreignApplication = Application::factory()->create(['company_id' => $foreign->company_id, 'job_id' => $foreign->id]);
+
+    $this->actingAs($user)->get(route('job-postings.candidates.show', [$otherJob, $application]))->assertNotFound();
+    $this->actingAs($user)->get(route('job-postings.candidates.show', [$foreign, $foreignApplication]))->assertForbidden();
 });

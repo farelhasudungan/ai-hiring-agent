@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'company_id',
@@ -30,6 +30,13 @@ class Application extends Model
 {
     /** @use HasFactory<ApplicationFactory> */
     use HasFactory;
+
+    /**
+     * Statuses from which an AI screening can be started by the user.
+     *
+     * @var list<string>
+     */
+    public const SCREENABLE_STATUSES = ['queued', 'failed'];
 
     /**
      * Get the attributes that should be cast.

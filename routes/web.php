@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AiSettingController;
+use App\Http\Controllers\CandidateController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobPostingController;
 use App\Http\Controllers\PdfIntakeController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\ScreeningController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
@@ -31,4 +33,6 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/settings/ai/models', [AiSettingController::class, 'models'])->middleware('throttle:ai-connection-test')->name('settings.ai.models');
     Route::post('/settings/ai/test', [AiSettingController::class, 'test'])->middleware('throttle:ai-connection-test')->name('settings.ai.test');
     Route::post('job-postings/{jobPosting}/intake/pdf', [PdfIntakeController::class, 'store'])->name('job-postings.intake.pdf');
+    Route::get('job-postings/{jobPosting}/candidates/{application}', [CandidateController::class, 'show'])->scopeBindings()->name('job-postings.candidates.show');
+    Route::post('job-postings/{jobPosting}/screening', [ScreeningController::class, 'store'])->name('job-postings.screening.store');
 });

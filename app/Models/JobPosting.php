@@ -62,6 +62,19 @@ class JobPosting extends Model
     }
 
     /**
+     * Applications whose resume is parsed and that still wait for (or failed)
+     * an AI screening.
+     *
+     * @return HasMany<Application, $this>
+     */
+    public function screenableApplications(): HasMany
+    {
+        return $this->applications()
+            ->whereIn('status', Application::SCREENABLE_STATUSES)
+            ->whereHas('documents', fn ($query) => $query->where('parsing_status', 'success')->whereNotNull('parsed_text'));
+    }
+
+    /**
      * @return HasMany<AiScreening, $this>
      */
     public function aiScreenings(): HasMany

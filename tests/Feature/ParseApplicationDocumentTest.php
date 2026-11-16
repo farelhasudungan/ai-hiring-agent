@@ -25,7 +25,7 @@ test('parsing a valid pdf stores the extracted text', function () {
         ->and($document->fresh()->parsed_text)->toContain('Jane Doe')
         ->and($document->application->fresh()->status)->toBe('queued');
 
-    Queue::assertPushed(ScreenApplication::class, fn (ScreenApplication $job) => $job->application->is($document->application));
+    Queue::assertNotPushed(ScreenApplication::class);
 });
 
 test('parsing a broken pdf marks the document and application as failed', function () {
