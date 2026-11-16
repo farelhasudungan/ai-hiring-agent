@@ -22,7 +22,6 @@ test('the service creates job postings scoped to the user company', function () 
         'required_skills' => 'PHP, Laravel',
         'nice_to_have' => 'Redis',
         'min_experience_years' => 3,
-        'form_id' => null,
     ]);
 
     expect($jobPosting->company_id)->toBe($user->company_id)

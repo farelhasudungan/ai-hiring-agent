@@ -204,7 +204,7 @@ Button groups use `flex-wrap` + `justify-center` so they wrap gracefully on narr
 - "Section header: Geist Mono 11px uppercase `zinc-400` eyebrow with 0.1em tracking, 30px/500 black H2 with -0.75px tracking, 14px `zinc-600` description."
 - "Feature list: 3-column grid, gap 40px, each item `border-t border-zinc-200 pt-5` with mono number, 14px/600 title, 12px `zinc-600` description, and a black inline arrow link at the bottom."
 
-## 10. Application Screens (Auth, Workspace, Public Forms)
+## 10. Application Screens (Auth & Workspace)
 
 The same system applies inside the product, with a few additions for dense, data-heavy screens.
 
@@ -229,4 +229,3 @@ The same system applies inside the product, with a few additions for dense, data
 - **Required marker**: `*` in `text-red-500`.
 - **Primary button** (`<x-primary-button>`): `bg-brand` white 14px/500, `rounded-xl`, min-height 44px, trailing white arrow icon.
 - **Auth pages**: white page, centered Roku logo above a bordered white card (max-width 448px).
-- **Public layout** (`<x-layout>`): same sticky translucent header as the landing page, 1024px max width, slim footer.

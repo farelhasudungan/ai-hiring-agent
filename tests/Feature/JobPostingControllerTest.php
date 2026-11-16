@@ -2,7 +2,6 @@
 
 use App\Models\Application;
 use App\Models\Candidate;
-use App\Models\Form;
 use App\Models\JobPosting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -73,28 +72,23 @@ test('viewers can browse job postings but cannot manage them', function () {
     $this->assertDatabaseHas('job_postings', ['id' => $jobPosting->id, 'title' => $jobPosting->title]);
 });
 
-test('admins can open the create and edit forms with only their company forms', function () {
+test('admins can open the create and edit pages', function () {
     $user = User::factory()->create(['role' => 'admin']);
-    $form = Form::factory()->create(['company_id' => $user->company_id, 'title' => 'Screening form']);
-    $foreignForm = Form::factory()->create(['title' => 'Foreign form']);
     $jobPosting = JobPosting::factory()->create(['company_id' => $user->company_id, 'title' => 'Existing role']);
 
     $this->actingAs($user)->get(route('job-postings.create'))
         ->assertOk()
         ->assertSee('Role title')
-        ->assertSee($form->title)
-        ->assertDontSee($foreignForm->title);
+        ->assertDontSee('Application form');
 
     $this->actingAs($user)->get(route('job-postings.edit', $jobPosting))
         ->assertOk()
         ->assertSee('Existing role')
-        ->assertSee($form->title)
-        ->assertDontSee($foreignForm->title);
+        ->assertDontSee('Application form');
 });
 
 test('hr users can create a job posting with parsed skills', function () {
     $user = User::factory()->create(['role' => 'hr']);
-    $form = Form::factory()->create(['company_id' => $user->company_id]);
 
     $this->actingAs($user)->post(route('job-postings.store'), [
         'title' => 'Senior Laravel Engineer',
@@ -106,7 +100,6 @@ test('hr users can create a job posting with parsed skills', function () {
         'required_skills' => 'PHP, Laravel,  PostgreSQL ,,',
         'nice_to_have' => 'Docker, AWS',
         'min_experience_years' => 5,
-        'form_id' => $form->id,
         'company_id' => 999,
     ])->assertRedirect();
 
@@ -114,8 +107,7 @@ test('hr users can create a job posting with parsed skills', function () {
 
     expect($jobPosting->company_id)->toBe($user->company_id)
         ->and($jobPosting->required_skills)->toBe(['PHP', 'Laravel', 'PostgreSQL'])
-        ->and($jobPosting->nice_to_have)->toBe(['Docker', 'AWS'])
-        ->and($jobPosting->form_id)->toBe($form->id);
+        ->and($jobPosting->nice_to_have)->toBe(['Docker', 'AWS']);
 });
 
 test('creating a job posting validates its input', function (array $payload, string $field) {
@@ -132,26 +124,10 @@ test('creating a job posting validates its input', function (array $payload, str
     'negative experience' => [['title' => 'Role', 'status' => 'draft', 'description' => 'Role.', 'min_experience_years' => -1], 'min_experience_years'],
 ]);
 
-test('a job posting cannot attach a form from another company', function () {
+test('the show page displays the job posting details', function () {
     $user = User::factory()->create(['role' => 'admin']);
-    $otherForm = Form::factory()->create();
-
-    $this->actingAs($user)->post(route('job-postings.store'), [
-        'title' => 'Role',
-        'status' => 'draft',
-        'description' => 'Role.',
-        'form_id' => $otherForm->id,
-    ])->assertSessionHasErrors('form_id');
-
-    $this->assertDatabaseCount('job_postings', 0);
-});
-
-test('the show page displays the job posting and its linked form', function () {
-    $user = User::factory()->create(['role' => 'admin']);
-    $form = Form::factory()->create(['company_id' => $user->company_id, 'title' => 'Engineering application']);
     $jobPosting = JobPosting::factory()->create([
         'company_id' => $user->company_id,
-        'form_id' => $form->id,
         'title' => 'Platform Engineer',
         'required_skills' => ['PHP', 'Laravel'],
     ]);
@@ -159,8 +135,8 @@ test('the show page displays the job posting and its linked form', function () {
     $this->actingAs($user)->get(route('job-postings.show', $jobPosting))
         ->assertOk()
         ->assertSee('Platform Engineer')
-        ->assertSee('Engineering application')
-        ->assertSee('Laravel');
+        ->assertSee('Laravel')
+        ->assertDontSee('Application form');
 });
 
 test('job postings from another company are not accessible', function () {

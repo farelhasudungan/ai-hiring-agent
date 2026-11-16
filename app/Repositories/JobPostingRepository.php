@@ -2,10 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\Form;
 use App\Models\JobPosting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 
 class JobPostingRepository
 {
@@ -61,16 +59,5 @@ class JobPostingRepository
             'open' => $counts['open'] ?? 0,
             'closed' => $counts['closed'] ?? 0,
         ];
-    }
-
-    /**
-     * @return Collection<int, Form>
-     */
-    public function formsForCompany(int $companyId): Collection
-    {
-        return Form::query()
-            ->where('company_id', $companyId)
-            ->orderBy('title')
-            ->get();
     }
 }

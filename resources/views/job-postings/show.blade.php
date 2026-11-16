@@ -78,53 +78,12 @@
                     <h2 id="details-heading" class="text-sm font-medium">Details</h2>
                     <dl class="flex flex-col gap-4">
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Applications</dt><dd class="text-sm font-medium">{{ $jobPosting->applications_count }}</dd></div>
-                        <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Form responses</dt><dd class="text-sm font-medium">{{ $jobPosting->form_submissions_count }}</dd></div>
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Department</dt><dd class="text-sm font-medium">{{ $jobPosting->department ?? '—' }}</dd></div>
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Location</dt><dd class="text-sm font-medium">{{ $jobPosting->location ?? '—' }}</dd></div>
                         <div class="flex items-center justify-between gap-4"><dt class="text-xs text-muted">Experience</dt><dd class="text-sm font-medium">{{ $jobPosting->min_experience_years !== null ? $jobPosting->min_experience_years.'+ years' : '—' }}</dd></div>
                     </dl>
                 </section>
 
-                <section class="flex flex-col gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="form-heading">
-                    <h2 id="form-heading" class="text-sm font-medium">Application form</h2>
-                    @if ($jobPosting->form)
-                        <div class="flex flex-col gap-3">
-                            <p class="font-medium wrap-anywhere">{{ $jobPosting->form->title }}</p>
-                            <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
-                                <span class="rounded-full bg-canvas px-3 py-1 capitalize">{{ $jobPosting->form->status }}</span>
-                                <span>Version {{ $jobPosting->form->version }}</span>
-                            </div>
-                            @if ($jobPosting->form->description)
-                                <p class="text-sm leading-relaxed text-muted">{{ $jobPosting->form->description }}</p>
-                            @endif
-
-                            @if ($jobPosting->form->isAcceptingResponses() && $jobPosting->form->publicUrl($jobPosting))
-                                <div class="flex flex-col gap-2 rounded-xl bg-canvas/60 p-4">
-                                    <p class="text-xs font-medium">Public application link</p>
-                                    <label for="public-job-link" class="sr-only">Public application link</label>
-                                    <input id="public-job-link" readonly value="{{ $jobPosting->form->publicUrl($jobPosting) }}" class="min-h-11 w-full rounded-xl border border-line bg-paper px-4 text-xs text-muted">
-                                    <div class="flex flex-wrap items-center gap-3">
-                                        <button type="button" data-copy-link data-copy-target="public-job-link" class="inline-flex min-h-10 items-center rounded-xl bg-brand px-4 text-xs font-medium text-white transition hover:bg-brand/90">Copy link</button>
-                                        <a href="{{ $jobPosting->form->publicUrl($jobPosting) }}" target="_blank" rel="noopener" class="text-xs font-medium underline underline-offset-4">Open form <span aria-hidden="true">↗</span></a>
-                                    </div>
-                                </div>
-                            @elseif ($jobPosting->form)
-                                <p class="text-xs leading-relaxed text-muted">{{ $jobPosting->form->status === 'draft' ? 'Publish this form to generate a public application link.' : 'This form is not accepting responses right now. Reopen it or extend the close date to generate a working link.' }}</p>
-                            @endif
-                        </div>
-                    @else
-                        <p class="text-sm leading-relaxed text-muted">No form is attached. Candidates cannot submit a form application for this role yet.</p>
-                    @endif
-
-                    <div class="flex flex-wrap items-center gap-4 border-t border-line/60 pt-4">
-                        <a href="{{ route('job-postings.responses.index', $jobPosting) }}" class="text-sm font-medium underline underline-offset-4">View responses ({{ $jobPosting->form_submissions_count }})</a>
-                        @if ($jobPosting->form)
-                            @can('update', $jobPosting->form)
-                                <a href="{{ route('forms.builder', $jobPosting->form) }}" class="text-sm text-muted underline-offset-4 hover:underline">Manage form</a>
-                            @endcan
-                        @endif
-                    </div>
-                </section>
 
                 @can('update', $jobPosting)
                     <section class="flex flex-col gap-4 rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-labelledby="status-heading">

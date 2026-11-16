@@ -10,7 +10,7 @@
         </div>
 
         <section class="rounded-2xl border border-line/60 bg-paper p-6 sm:p-8" aria-label="Job posting details">
-            @include('job-postings._form', ['jobPosting' => null, 'forms' => $forms])
+            @include('job-postings._form', ['jobPosting' => null])
         </section>
     </div>
 </x-dashboard-layout>

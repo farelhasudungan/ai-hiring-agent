@@ -25,7 +25,7 @@ class CandidateFactory extends Factory
             'phone' => fake()->phoneNumber(),
             'linkedin_url' => 'https://www.linkedin.com/in/'.fake()->slug(2),
             'portfolio_url' => fake()->optional()->url(),
-            'source' => fake()->randomElement(['form', 'gmail', 'manual', 'import']),
+            'source' => fake()->randomElement(['gmail', 'manual', 'import']),
             'source_meta' => null,
             'notes' => fake()->optional()->sentence(),
         ];

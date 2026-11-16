@@ -31,13 +31,11 @@ class JobPostingController extends Controller
         ]);
     }
 
-    public function create(Request $request, JobPostingRepository $repository): View
+    public function create(): View
     {
         Gate::authorize('create', JobPosting::class);
 
-        return view('job-postings.create', [
-            'forms' => $repository->formsForCompany($request->user()->company_id),
-        ]);
+        return view('job-postings.create');
     }
 
     public function store(StoreJobPostingRequest $request, JobPostingService $service): RedirectResponse
@@ -52,7 +50,7 @@ class JobPostingController extends Controller
     {
         Gate::authorize('view', $jobPosting);
 
-        $jobPosting->load('form')->loadCount(['applications', 'formSubmissions']);
+        $jobPosting->loadCount('applications');
 
         return view('job-postings.show', [
             'jobPosting' => $jobPosting,
@@ -64,13 +62,12 @@ class JobPostingController extends Controller
         ]);
     }
 
-    public function edit(Request $request, JobPosting $jobPosting, JobPostingRepository $repository): View
+    public function edit(JobPosting $jobPosting): View
     {
         Gate::authorize('update', $jobPosting);
 
         return view('job-postings.edit', [
             'jobPosting' => $jobPosting,
-            'forms' => $repository->formsForCompany($jobPosting->company_id),
         ]);
     }
 

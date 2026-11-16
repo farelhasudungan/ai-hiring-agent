@@ -30,12 +30,5 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('registration', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
-
-        RateLimiter::for('public-application', function (Request $request): Limit {
-            $token = $request->route('token');
-            $identifier = is_string($token) ? $token : '';
-
-            return Limit::perMinute(10)->by(hash('sha256', $identifier.'|'.$request->ip()));
-        });
     }
 }

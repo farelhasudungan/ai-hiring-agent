@@ -1,6 +1,5 @@
 @php
     $isEdit = isset($jobPosting);
-    $selectedFormId = old('form_id', $isEdit ? $jobPosting->form_id : null);
     $selectedStatus = old('status', $isEdit ? $jobPosting->status : 'draft');
     $requiredSkills = old('required_skills', $isEdit ? implode(', ', $jobPosting->required_skills ?? []) : '');
     $niceToHave = old('nice_to_have', $isEdit ? implode(', ', $jobPosting->nice_to_have ?? []) : '');
@@ -36,22 +35,6 @@
             @enderror
         </div>
 
-        <div class="flex flex-col gap-2">
-            <label for="form_id" class="flex items-center gap-2 text-sm font-medium">
-                Application form
-                <span class="text-xs font-normal text-muted">Optional</span>
-            </label>
-            <select id="form_id" name="form_id" class="min-h-14 w-full rounded-xl border border-line bg-paper px-5 py-3 text-base">
-                <option value="">No form attached</option>
-                @foreach ($forms as $form)
-                    <option value="{{ $form->id }}" @selected((string) $selectedFormId === (string) $form->id)>{{ $form->title }} ({{ $form->status }})</option>
-                @endforeach
-            </select>
-            <p class="text-xs text-muted">Candidates use this form to apply for the role. @can('viewAny', App\Models\Form::class)<a href="{{ route('forms.index') }}" class="underline underline-offset-4 hover:text-ink">Manage forms</a>@endcan</p>
-            @error('form_id')
-                <p role="alert" class="text-sm text-red-800">{{ $message }}</p>
-            @enderror
-        </div>
     </div>
 
     <div class="flex flex-col gap-2">

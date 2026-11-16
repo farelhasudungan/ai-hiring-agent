@@ -24,7 +24,7 @@ class ApplicationFactory extends Factory
             'company_id' => Company::factory(),
             'candidate_id' => Candidate::factory(),
             'job_id' => JobPosting::factory(),
-            'source' => fake()->randomElement(['form', 'gmail', 'manual']),
+            'source' => fake()->randomElement(['gmail', 'manual']),
             'status' => 'received',
             'latest_match_score' => null,
             'latest_ai_status' => null,

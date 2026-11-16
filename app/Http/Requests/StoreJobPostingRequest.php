@@ -35,11 +35,6 @@ class StoreJobPostingRequest extends FormRequest
             'required_skills' => ['nullable', 'string', 'max:2000'],
             'nice_to_have' => ['nullable', 'string', 'max:2000'],
             'min_experience_years' => ['nullable', 'integer', 'min:0', 'max:60'],
-            'form_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('forms', 'id')->where('company_id', $this->user()?->company_id),
-            ],
         ];
     }
 }

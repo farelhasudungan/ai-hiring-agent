@@ -19,11 +19,6 @@
                 <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Job postings
             </a>
-            <a href="{{ route('forms.index') }}" @if (request()->routeIs('forms.*')) aria-current="page" @endif
-                @class(['flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium transition', 'bg-zinc-100 text-ink' => request()->routeIs('forms.*'), 'text-muted hover:bg-zinc-50 hover:text-ink' => ! request()->routeIs('forms.*')])>
-                <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 4h8l4 4v12H4V4h4Z" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 11h8M8 15h5" stroke-linecap="round"/></svg>
-                Forms
-            </a>
         @endif
         <a href="{{ $user->company_id ? route('dashboard').'#company' : route('companies.create') }}" @if (request()->routeIs('companies.*')) aria-current="page" @endif
             @class(['flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium transition', 'bg-zinc-100 text-ink' => request()->routeIs('companies.*'), 'text-muted hover:bg-zinc-50 hover:text-ink' => ! request()->routeIs('companies.*')])>

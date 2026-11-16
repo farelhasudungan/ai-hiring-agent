@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'application_id',
     'job_id',
-    'form_submission_id',
     'document_id',
     'model_name',
     'status',
@@ -82,13 +81,5 @@ class AiScreening extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(ApplicationDocument::class, 'document_id');
-    }
-
-    /**
-     * @return BelongsTo<FormSubmission, $this>
-     */
-    public function formSubmission(): BelongsTo
-    {
-        return $this->belongsTo(FormSubmission::class);
     }
 }
