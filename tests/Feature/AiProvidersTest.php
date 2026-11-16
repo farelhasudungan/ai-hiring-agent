@@ -4,6 +4,9 @@ use App\Models\AiProviderSetting;
 use App\Models\Company;
 use App\Services\Ai\AiProviderManager;
 use App\Services\Ai\AiService;
+use App\Services\Ai\Data\AiTool;
+use App\Services\Ai\Data\ChatTurn;
+use App\Services\Ai\Data\ToolCall;
 use App\Services\Ai\Exceptions\AiProviderException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -182,4 +185,112 @@ test('the ai service streams with the company provider and requires a setting', 
     Http::fake(['https://api.openai.com/v1/chat/completions' => Http::response("data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\ndata: [DONE]\n\n")]);
 
     expect(implode('', iterator_to_array(app(AiService::class)->stream($company->fresh(), '', 'Hi'), false)))->toBe('Hi');
+});
+
+/**
+ * @return array<string, array{0: string, 1: string, 2: string, 3: array<string, mixed>, 4: string, 5: string}>
+ */
+dataset('tool providers', [
+    'openai' => ['openai', 'https://api.openai.com/v1/chat/completions', 'gpt-4o-mini', [
+        'choices' => [['message' => ['content' => null, 'tool_calls' => [
+            ['id' => 'call_1', 'type' => 'function', 'function' => ['name' => 'search_candidates', 'arguments' => '{"skills":["PHP"]}']],
+        ]]]],
+        'usage' => ['prompt_tokens' => 20, 'completion_tokens' => 5],
+    ], 'call_1', '"role":"tool"'],
+    'openrouter' => ['openrouter', 'https://openrouter.ai/api/v1/chat/completions', 'openai/gpt-4o-mini', [
+        'choices' => [['message' => ['content' => '', 'tool_calls' => [
+            ['id' => 'call_1', 'type' => 'function', 'function' => ['name' => 'search_candidates', 'arguments' => '{"skills":["PHP"]}']],
+        ]]]],
+    ], 'call_1', '"tool_call_id":"call_1"'],
+    'claude' => ['claude', 'https://api.anthropic.com/v1/messages', 'claude-haiku-5-5', [
+        'content' => [
+            ['type' => 'text', 'text' => 'Let me look.'],
+            ['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'search_candidates', 'input' => ['skills' => ['PHP']]],
+        ],
+        'usage' => ['input_tokens' => 20, 'output_tokens' => 5],
+    ], 'toolu_1', '"tool_use_id":"toolu_1"'],
+    'gemini' => ['gemini', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', 'gemini-2.0-flash', [
+        'candidates' => [['content' => ['parts' => [['functionCall' => ['name' => 'search_candidates', 'args' => ['skills' => ['PHP']]]]]]]],
+        'usageMetadata' => ['promptTokenCount' => 20, 'candidatesTokenCount' => 5],
+    ], 'call_0_search_candidates', 'functionResponse'],
+]);
+
+function searchTool(): AiTool
+{
+    return new AiTool('search_candidates', 'Find candidates.', ['type' => 'object', 'properties' => ['skills' => ['type' => 'array', 'items' => ['type' => 'string']]]]);
+}
+
+test('each provider sends tools and parses tool calls', function (string $provider, string $url, string $model, array $body, string $callId) {
+    Http::fake([$url => Http::response($body)]);
+
+    $response = app(AiProviderManager::class)->driver($provider)->chat('Be brief.', [ChatTurn::user('Find PHP people')], [searchTool()], $model, 'secret-key', 100);
+
+    expect($response->wantsTools())->toBeTrue()
+        ->and($response->toolCalls)->toHaveCount(1)
+        ->and($response->toolCalls[0]->name)->toBe('search_candidates')
+        ->and($response->toolCalls[0]->id)->toBe($callId)
+        ->and($response->toolCalls[0]->arguments)->toBe(['skills' => ['PHP']]);
+
+    Http::assertSent(fn (Request $request) => str_contains($request->body(), 'search_candidates')
+        && str_contains($request->body(), 'Find PHP people')
+        && ! str_contains($request->url(), 'secret-key'));
+})->with('tool providers');
+
+test('each provider replays the tool call and its result in its own format', function (string $provider, string $url, string $model, array $body, string $callId, string $marker) {
+    Http::fake([$url => Http::response($body)]);
+
+    $driver = app(AiProviderManager::class)->driver($provider);
+    $first = $driver->chat('', [ChatTurn::user('Find PHP people')], [searchTool()], $model, 'key');
+
+    $driver->chat('', [
+        ChatTurn::user('Find PHP people'),
+        $first->toTurn(),
+        ChatTurn::toolResult($callId, 'search_candidates', '{"candidates":[]}'),
+    ], [searchTool()], $model, 'key');
+
+    $sent = collect(Http::recorded())->last()[0];
+
+    expect($sent->body())->toContain($marker)->toContain('{\"candidates\":[]}');
+})->with('tool providers');
+
+test('a plain text answer carries no tool calls', function () {
+    Http::fake(['https://api.openai.com/v1/chat/completions' => Http::response(['choices' => [['message' => ['content' => 'Hello']]]])]);
+
+    $response = app(AiProviderManager::class)->driver('openai')->chat('', [ChatTurn::user('Hi')], [searchTool()], 'gpt-4o-mini', 'key');
+
+    expect($response->text)->toBe('Hello')->and($response->wantsTools())->toBeFalse();
+});
+
+test('a reply with neither text nor tool calls is an empty response', function () {
+    Http::fake(['https://api.openai.com/v1/chat/completions' => Http::response(['choices' => [['message' => ['content' => '']]]])]);
+
+    app(AiProviderManager::class)->driver('openai')->chat('', [ChatTurn::user('Hi')], [], 'gpt-4o-mini', 'key');
+})->throws(AiProviderException::class);
+
+test('claude merges the results of one round into a single user message', function () {
+    Http::fake(['https://api.anthropic.com/v1/messages' => Http::response(['content' => [['type' => 'text', 'text' => 'ok']]])]);
+
+    $calls = [new ToolCall('t1', 'search_candidates'), new ToolCall('t2', 'count_candidates')];
+
+    app(AiProviderManager::class)->driver('claude')->chat('', [
+        ChatTurn::user('Go'),
+        ChatTurn::assistant(null, $calls),
+        ChatTurn::toolResult('t1', 'search_candidates', 'a'),
+        ChatTurn::toolResult('t2', 'count_candidates', 'b'),
+    ], [searchTool()], 'claude-haiku-5-5', 'key');
+
+    $messages = collect(Http::recorded())->last()[0]->data()['messages'];
+
+    expect($messages)->toHaveCount(3)->and($messages[2]['content'])->toHaveCount(2);
+});
+
+test('the ai service runs a tool round with the company provider', function () {
+    $company = Company::factory()->create();
+
+    expect(fn () => app(AiService::class)->chat($company, '', [ChatTurn::user('Hi')], []))->toThrow(DomainException::class);
+
+    AiProviderSetting::factory()->forProvider('openai', 'gpt-4o-mini')->for($company)->create();
+    Http::fake(['https://api.openai.com/v1/chat/completions' => Http::response(['choices' => [['message' => ['content' => 'Hi']]]])]);
+
+    expect(app(AiService::class)->chat($company->fresh(), '', [ChatTurn::user('Hi')], [])->text)->toBe('Hi');
 });

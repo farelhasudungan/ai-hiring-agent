@@ -20,8 +20,17 @@ class CandidateSearchFilterParser
      */
     public function parse(string $text, array $allowedJobIds): CandidateSearchFilters
     {
-        $data = $this->decode($text);
+        return $this->fromArray($this->decode($text), $allowedJobIds);
+    }
 
+    /**
+     * Same sanitising for arguments that already arrive as an array (tool calls).
+     *
+     * @param  array<string, mixed>  $data
+     * @param  list<int>  $allowedJobIds
+     */
+    public function fromArray(array $data, array $allowedJobIds): CandidateSearchFilters
+    {
         $terms = collect([...$this->strings($data['skills'] ?? []), ...$this->strings($data['keywords'] ?? [])])
             ->map(fn (string $term): string => trim(str_replace('"', '', $term)))
             ->filter(fn (string $term): bool => $term !== '' && mb_strlen($term) <= self::MAX_TERM_LENGTH)

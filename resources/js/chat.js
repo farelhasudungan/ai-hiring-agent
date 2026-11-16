@@ -125,6 +125,31 @@ document.querySelectorAll('[data-chat-tabs]').forEach((tabs) => {
     });
 });
 
+/**
+ * One shared confirmation dialog for every delete button.
+ */
+const deleteDialog = document.getElementById('chat-delete-dialog');
+
+if (deleteDialog) {
+    const deleteForm = deleteDialog.querySelector('[data-chat-delete-form]');
+    const deleteName = deleteDialog.querySelector('[data-chat-delete-name]');
+
+    document.querySelectorAll('[data-chat-delete]').forEach((button) => {
+        button.addEventListener('click', () => {
+            deleteForm.action = button.dataset.chatDelete;
+            deleteName.textContent = `"${button.dataset.chatDeleteTitle}"`;
+            deleteDialog.showModal();
+        });
+    });
+
+    deleteDialog.querySelector('[data-chat-delete-cancel]').addEventListener('click', () => deleteDialog.close());
+    deleteDialog.addEventListener('click', (event) => {
+        if (event.target === deleteDialog) {
+            deleteDialog.close();
+        }
+    });
+}
+
 const root = document.querySelector('[data-chat]');
 
 if (root) {
@@ -163,10 +188,9 @@ if (root) {
         return { bubble, cards };
     };
 
-    const showThinking = (bubble) => {
-        const dots = element('span', 'flex items-center gap-1 py-2');
+    const showThinking = (bubble, label = 'Thinking…') => {
+        const dots = element('span', 'flex items-center gap-2 py-2 text-sm text-muted');
         dots.setAttribute('role', 'status');
-        dots.setAttribute('aria-label', 'Searching candidates');
 
         [0, 150, 300].forEach((delay) => {
             const dot = element('span', 'size-2 animate-bounce rounded-full bg-zinc-400');
@@ -174,6 +198,7 @@ if (root) {
             dots.append(dot);
         });
 
+        dots.append(element('span', '', label));
         bubble.replaceChildren(dots);
     };
 
@@ -267,7 +292,9 @@ if (root) {
                 buffer = parsed.rest;
 
                 parsed.events.forEach(({ event: name, data }) => {
-                    if (name === 'candidates') {
+                    if (name === 'tool') {
+                        showThinking(answer.bubble, data.label);
+                    } else if (name === 'candidates') {
                         addCards(answer.cards, data.candidates);
                     } else if (name === 'chunk') {
                         text += data.text;

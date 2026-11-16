@@ -34,6 +34,11 @@ class ChatConversationPolicy
             && $user->company_id === $conversation->company_id;
     }
 
+    public function delete(User $user, ChatConversation $conversation): bool
+    {
+        return $this->view($user, $conversation);
+    }
+
     private function canChat(User $user): bool
     {
         return $user->company_id !== null && in_array($user->role, self::CHAT_ROLES, true);

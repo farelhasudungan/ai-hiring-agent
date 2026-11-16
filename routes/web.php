@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
     Route::get('/chat/{conversation}', [ChatController::class, 'show'])->name('chat.show');
+    Route::delete('/chat/{conversation}', [ChatController::class, 'destroy'])->name('chat.destroy');
     Route::post('/chat/{conversation}/messages', [ChatController::class, 'storeMessage'])->middleware('throttle:ai-chat')->name('chat.messages.store');
     Route::post('job-postings/{jobPosting}/screening', [ScreeningController::class, 'store'])->name('job-postings.screening.store');
 });

@@ -22,7 +22,7 @@ class ChatMessageFactory extends Factory
             'conversation_id' => ChatConversation::factory(),
             'role' => ChatMessage::ROLE_USER,
             'content' => fake()->sentence(),
-            'filters' => null,
+            'tool_calls' => null,
             'candidate_ids' => null,
         ];
     }

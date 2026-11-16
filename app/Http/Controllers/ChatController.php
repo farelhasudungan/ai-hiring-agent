@@ -88,6 +88,15 @@ class ChatController extends Controller
         ]);
     }
 
+    public function destroy(ChatConversation $conversation): RedirectResponse
+    {
+        Gate::authorize('delete', $conversation);
+
+        $conversation->delete();
+
+        return redirect()->route('chat.index')->with('status', 'Search deleted.');
+    }
+
     /**
      * Stores the question and streams the answer as server-sent events:
      * `candidates`, many `chunk`, then `done` (or `error`).
@@ -108,6 +117,9 @@ class ChatController extends Controller
         }
 
         return response()->stream(function () use ($chat, $conversation, $question): void {
+            // An agent loop makes several provider calls, so allow more than one request's time.
+            set_time_limit(180);
+
             try {
                 foreach ($chat->respond($conversation, $question) as $event) {
                     $this->emit($event['event'], $event['data']);

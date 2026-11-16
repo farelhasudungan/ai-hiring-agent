@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['conversation_id', 'role', 'content', 'filters', 'candidate_ids'])]
+#[Fillable(['conversation_id', 'role', 'content', 'tool_calls', 'candidate_ids'])]
 class ChatMessage extends Model
 {
     /** @use HasFactory<ChatMessageFactory> */
@@ -26,7 +26,7 @@ class ChatMessage extends Model
     protected function casts(): array
     {
         return [
-            'filters' => 'array',
+            'tool_calls' => 'array',
             'candidate_ids' => 'array',
         ];
     }

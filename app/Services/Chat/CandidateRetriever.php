@@ -21,25 +21,36 @@ class CandidateRetriever
     private const POOL_SIZE = 40;
 
     /**
-     * @return Collection<int, Application>
+     * Candidates of the company that match the filters, without ordering or
+     * eager loading so it can be counted and grouped as well.
+     *
+     * @return Builder<Application>
      */
-    public function search(Company $company, CandidateSearchFilters $filters, ?int $jobId = null): Collection
+    public function query(Company $company, CandidateSearchFilters $filters, ?int $jobId = null): Builder
     {
         $jobId ??= $filters->jobId;
 
-        $pool = Application::query()
-            ->where('company_id', $company->id)
-            ->when($jobId !== null, fn (Builder $query) => $query->where('job_id', $jobId))
-            ->when($filters->minScore !== null, fn (Builder $query) => $query->where('latest_match_score', '>=', $filters->minScore))
+        return Application::query()
+            ->where('applications.company_id', $company->id)
+            ->when($jobId !== null, fn (Builder $query) => $query->where('applications.job_id', $jobId))
+            ->when($filters->minScore !== null, fn (Builder $query) => $query->where('applications.latest_match_score', '>=', $filters->minScore))
             ->when($filters->minExperienceYears !== null || $filters->recommendations !== [], fn (Builder $query) => $query->whereHas('aiScreenings', function (Builder $screenings) use ($filters): void {
                 $screenings->where('status', 'success')
                     ->when($filters->minExperienceYears !== null, fn (Builder $q) => $q->where('experience_years', '>=', $filters->minExperienceYears))
                     ->when($filters->recommendations !== [], fn (Builder $q) => $q->whereIn('recommendation', $filters->recommendations));
             }))
-            ->when($filters->terms !== [], fn (Builder $query) => $query->whereHas('documents', function (Builder $documents) use ($filters): void {
-                $documents->where('parsing_status', 'success')->where(fn (Builder $q) => $this->matchAnyTerm($q, $filters->terms));
-            }))
-            ->when($filters->terms === [], fn (Builder $query) => $query->whereHas('documents', fn (Builder $documents) => $documents->where('parsing_status', 'success')))
+            ->whereHas('documents', function (Builder $documents) use ($filters): void {
+                $documents->where('parsing_status', 'success')
+                    ->when($filters->terms !== [], fn (Builder $q) => $q->where(fn (Builder $terms) => $this->matchAnyTerm($terms, $filters->terms)));
+            });
+    }
+
+    /**
+     * @return Collection<int, Application>
+     */
+    public function search(Company $company, CandidateSearchFilters $filters, ?int $jobId = null, int $limit = self::RESULT_LIMIT): Collection
+    {
+        $pool = $this->query($company, $filters, $jobId)
             ->with([
                 'job:id,title',
                 'documents' => fn ($documents) => $documents->where('parsing_status', 'success')->latest('id'),
@@ -52,7 +63,7 @@ class CandidateRetriever
 
         return $pool
             ->sortByDesc(fn (Application $application): int => $this->termHits($application, $filters->terms))
-            ->take(self::RESULT_LIMIT)
+            ->take($limit)
             ->values();
     }
 

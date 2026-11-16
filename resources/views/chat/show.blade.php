@@ -5,9 +5,12 @@
             data-chat-url="{{ route('chat.messages.store', $conversation) }}"
             data-chat-token="{{ csrf_token() }}"
             @if ($firstMessage) data-chat-first-message="{{ $firstMessage }}" @endif>
-            <div class="border-b border-line/60 bg-paper px-4 py-2">
-                <h1 class="truncate text-sm font-medium">{{ $conversation->title }}</h1>
-                <p class="truncate text-xs text-muted">Searching in: {{ $conversation->job?->title ?? 'all job postings' }}</p>
+            <div class="flex items-center justify-between gap-3 border-b border-line/60 bg-paper px-4 py-2">
+                <div class="min-w-0">
+                    <h1 class="truncate text-sm font-medium">{{ $conversation->title }}</h1>
+                    <p class="truncate text-xs text-muted">Searching in: {{ $conversation->job?->title ?? 'all job postings' }}</p>
+                </div>
+                <button type="button" data-chat-delete="{{ route('chat.destroy', $conversation) }}" data-chat-delete-title="{{ $conversation->title }}" class="shrink-0 rounded-full border border-line px-4 py-2 text-sm text-muted transition hover:border-red-700 hover:text-red-700">Delete</button>
             </div>
 
             <div data-chat-scroll class="flex-1 overflow-y-auto scroll-smooth">
