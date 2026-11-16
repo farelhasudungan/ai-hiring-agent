@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['name', 'slug', 'plan'])]
 class Company extends Model
@@ -36,5 +37,13 @@ class Company extends Model
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
+    }
+
+    /**
+     * @return HasOne<AiProviderSetting, $this>
+     */
+    public function aiProviderSetting(): HasOne
+    {
+        return $this->hasOne(AiProviderSetting::class);
     }
 }
