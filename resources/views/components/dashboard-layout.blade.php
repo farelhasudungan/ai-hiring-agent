@@ -30,7 +30,6 @@
                     </button>
                     <p class="truncate text-sm"><span class="hidden text-muted sm:inline">Workspace <span class="px-3 text-line">/</span></span>{{ $title }}</p>
                 </div>
-                <span class="flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-paper text-sm font-medium" aria-label="Signed in as {{ auth()->user()->name }}">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
             </header>
 
             <main id="main-content" class="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-8 sm:py-10 xl:px-12" tabindex="-1">
