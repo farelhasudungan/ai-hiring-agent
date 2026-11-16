@@ -123,3 +123,31 @@ test('only pdf and zip files are accepted', function () {
         ->postJson(route('job-postings.intake.pdf', $this->job), ['files' => [UploadedFile::fake()->create('cv.docx', 10)]])
         ->assertJsonValidationErrors('files.0');
 });
+
+test('the job posting page shows the upload form to managers only', function () {
+    $viewer = User::factory()->create(['role' => 'viewer', 'company_id' => $this->user->company_id]);
+
+    $this->actingAs($this->user)->get(route('job-postings.show', $this->job))
+        ->assertOk()->assertSee('Upload candidates')->assertSee(route('job-postings.intake.pdf', $this->job), false);
+    $this->actingAs($viewer)->get(route('job-postings.show', $this->job))
+        ->assertOk()->assertDontSee('Upload candidates');
+});
+
+test('a form upload redirects back to the job posting with a summary', function () {
+    $zip = makeZip(['ok.pdf' => fakePdfContent('Ok'), 'fake.pdf' => 'nope']);
+
+    $this->actingAs($this->user)
+        ->post(route('job-postings.intake.pdf', $this->job), ['files' => [$zip]])
+        ->assertRedirectToRoute('job-postings.show', $this->job)
+        ->assertSessionHas('status', '1 candidate(s) uploaded, 0 duplicate(s) skipped.')
+        ->assertSessionHas('intake_rejected');
+
+    $this->get(route('job-postings.show', $this->job))->assertSee('could not be imported', false);
+});
+
+test('a form upload without files returns to the page with errors', function () {
+    $this->actingAs($this->user)->from(route('job-postings.show', $this->job))
+        ->post(route('job-postings.intake.pdf', $this->job), [])
+        ->assertRedirectToRoute('job-postings.show', $this->job)
+        ->assertSessionHasErrors('files');
+});

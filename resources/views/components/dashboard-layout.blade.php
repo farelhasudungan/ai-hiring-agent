@@ -33,12 +33,10 @@
             </header>
 
             <main id="main-content" class="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-8 sm:py-10 xl:px-12" tabindex="-1">
-                @if (session('status'))
-                    <div role="status" class="rounded-xl border border-line bg-paper px-6 py-4 text-sm">{{ session('status') }}</div>
-                @endif
-
                 {{ $slot }}
             </main>
         </div>
+
+        <x-toast-region />
     </body>
 </html>

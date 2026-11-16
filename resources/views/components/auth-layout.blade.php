@@ -23,5 +23,7 @@
 
             {{ $slot }}
         </main>
+
+        <x-toast-region />
     </body>
 </html>
