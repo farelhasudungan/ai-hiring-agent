@@ -1,3 +1,4 @@
+import { initAgenticChat } from './agentic-chat';
 import { initCandidateDemo, initScrollAnimations } from './landing';
 
 const menuToggle = document.querySelector('[data-menu-toggle]');
@@ -31,3 +32,4 @@ if (menuToggle && navigation) {
 
 initCandidateDemo();
 initScrollAnimations();
+initAgenticChat();

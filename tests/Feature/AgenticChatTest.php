@@ -198,7 +198,7 @@ test('authenticated navigation links to agentic chat', function () {
         ->get(route('home'))
         ->assertOk()
         ->assertSee('Agentic Chat')
-        ->assertSee(route('agentic-chat.sessions.index'), false);
+        ->assertSee(route('agentic-chat.workspace'), false);
 });
 
 test('naive chat history route is not available outside local', function () {

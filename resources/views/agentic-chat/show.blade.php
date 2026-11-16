@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-width px-4 py-12 sm:px-6 md:px-8">
     <div class="mb-8">
-        <a href="{{ route('agentic-chat.sessions.index') }}" class="text-sm text-body hover:text-ink">← Kembali ke daftar</a>
+        <a href="{{ route('agentic-chat.workspace') }}" class="text-sm text-body hover:text-ink">← Kembali ke Agentic Chat</a>
     </div>
 
     <h1 class="section-title mb-2">{{ $session->title ?? 'Untitled Session' }}</h1>

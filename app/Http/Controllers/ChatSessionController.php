@@ -9,17 +9,6 @@ use Illuminate\View\View;
 
 class ChatSessionController extends Controller
 {
-    public function index(Request $request): View
-    {
-        $sessions = ChatSession::query()
-            ->whereBelongsTo($request->user())
-            ->withCount('messages')
-            ->orderByDesc('updated_at')
-            ->get();
-
-        return view('agentic-chat.index', compact('sessions'));
-    }
-
     public function show(Request $request, int $id): View
     {
         $session = ChatSession::query()

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Roku mengubah lamaran dari Gmail dan form menjadi ranking kandidat dengan alasan yang jelas. AI membantu menilai, Anda tetap memutuskan. Coba demo interaktifnya.">
     <meta name="theme-color" content="#ffffff">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
@@ -33,7 +34,7 @@
                 <a href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm transition-colors hover:bg-surface md:py-2">Project</a>
                 <a href="{{ route('about') }}" @if(request()->routeIs('about')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm text-body transition-colors hover:bg-surface hover:text-ink md:py-2">About</a>
                 @auth
-                    <a href="{{ route('agentic-chat.sessions.index') }}" @if(request()->routeIs('agentic-chat.*')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm text-body transition-colors hover:bg-surface hover:text-ink md:py-2">Agentic Chat</a>
+                    <a href="{{ route('agentic-chat.workspace') }}" @if(request()->routeIs('agentic-chat.*')) aria-current="page" @endif class="rounded-full px-3 py-3 text-sm text-body transition-colors hover:bg-surface hover:text-ink md:py-2">Agentic Chat</a>
                 @endauth
             </div>
         </nav>
