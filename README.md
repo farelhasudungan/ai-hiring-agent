@@ -97,7 +97,7 @@ The polymorphic agent links above are conceptual; only `chat_message_id`, `chat_
 
 ### Chat history and eager loading
 
-Authenticated routes under `/agentic-chat/sessions` list a user's sessions and show a session detail. The controller scopes both lookups to the signed-in user. The detail action loads the full relationship graph in bounded queries:
+The interactive workspace lives at `/agentic-chat` and lists a user's sessions in its sidebar. The read-only history detail at `/agentic-chat/sessions/{id}` remains available for deep links, and `/agentic-chat/sessions` now redirects to the workspace. The controller scopes both lookups to the signed-in user. The detail action loads the full relationship graph in bounded queries:
 
 ```php
 ChatSession::query()
@@ -203,13 +203,15 @@ Ikuti langkah-langkah berikut untuk mengonfigurasi dan menjalankan API Hub pada 
    LLM_PROVIDER=ollama
    OLLAMA_BASE_URL=http://localhost:11434
    OLLAMA_MODEL=qwen3:14b
-   SENOPATI_BASE_URL=https://senopati.its.ac.id/v1
+   SENOPATI_BASE_URL=https://senopati.its.ac.id/llm-gateway/v1
    SENOPATI_API_KEY=kunci_api_senopati_anda
    SENOPATI_MODEL=qwen3:14b
    LLM_TIMEOUT=30
    LLM_CONNECT_TIMEOUT=3
    LLM_SYSTEM_PROMPT="Anda adalah asisten rekrutmen (HR) Roku. Bantu menganalisis CV, menilai kandidat, dan menyusun rekomendasi perekrutan secara objektif. Keputusan akhir tetap berada di tangan manusia dan rekomendasi ini bersifat advisory."
    ```
+
+   > **Catatan Windows/PHP:** panggilan HTTPS ke Senopati memerlukan CA bundle. Bila muncul `cURL error 60: self-signed certificate in certificate chain`, set `curl.cainfo` dan `openssl.cafile` di `php.ini` ke CA bundle (mis. `C:\xampp\apache\bin\curl-ca-bundle.crt`), lalu restart server.
 
 2. **Jalankan Migrasi Database**:
    Jalankan migrasi untuk membuat tabel `personal_access_tokens` dan `chat_logs`:
@@ -228,11 +230,14 @@ Ikuti langkah-langkah berikut untuk mengonfigurasi dan menjalankan API Hub pada 
    - **Kata Sandi:** `password`
 
 4. **Menjalankan Layanan Ollama Lokal**:
-   Pastikan Ollama telah terpasang dan model yang dikonfigurasi telah diunduh:
+   Pastikan Ollama telah terpasang dan model yang dikonfigurasi benar-benar sudah diunduh. Tanpa model, `POST /api/chat` membalas HTTP 404 `model '...' not found` dan permintaan dialihkan ke Senopati:
    ```bash
    ollama serve
    ollama pull qwen3:14b
+   ollama list
    ```
+
+   Endpoint Senopati memakai gateway OpenAI-compatible ITS: `SENOPATI_BASE_URL=https://senopati.its.ac.id/llm-gateway/v1` (path `/chat/completions` ditambahkan oleh client). Untuk streaming, client mengirim `stream_options.include_usage` sehingga metadata token tetap tercatat di `chat_logs`.
 
 5. **Menjalankan Server Laravel**:
    ```bash
@@ -334,7 +339,9 @@ Pesan galat lain yang mungkin muncul:
 
 | Status | `message` | Penyebab |
 | :---: | :--- | :--- |
-| `502` | `Ollama menolak permintaan yang dikirim.` | Ollama membalas HTTP 4xx; permintaan **tidak** diulang ke Senopati. |
+| `502` | `Ollama menolak permintaan yang dikirim.` | Ollama membalas 4xx selain 404 (permintaan tidak valid); **tidak** diulang ke Senopati. |
+| `502` | `Model Ollama yang dikonfigurasi tidak tersedia pada server lokal.` | Ollama membalas 404 (model belum di-pull); otomatis dialihkan ke Senopati. |
+| `502` | `Endpoint Senopati AI ITS tidak ditemukan. Periksa SENOPATI_BASE_URL.` | Path gateway salah; hanya muncul bila Senopati dipakai sebagai provider utama. |
 | `502` | `Respons dari Ollama tidak dapat dibaca.` | Body respons bukan JSON yang valid. |
 | `502` | `Respons Ollama tidak memuat konten jawaban.` | JSON valid tetapi tidak berisi `message.content`. |
 | `500` | `Terjadi kesalahan sistem saat menghubungi layanan LLM.` | Kesalahan tak terduga (tidak memicu fallback dan tidak membocorkan detail internal). |
@@ -402,8 +409,8 @@ data: {"status":"error","message":"Respons streaming dari penyedia LLM terputus 
 
 2. **Mekanisme Fallback Otomatis (Challenge 3)**:
    - `LlmManager` mengeksekusi panggilan utama ke penyedia lokal (Ollama) dengan waktu tunggu koneksi singkat (3 detik).
-   - Fallback ke Senopati AI ITS **hanya** dilakukan untuk kegagalan yang bersifat sementara: connection refused, connection timeout, HTTP 5xx, respons rusak, atau respons tanpa konten. Kegagalan tersebut ditandai `retryable` pada `LlmException`.
-   - HTTP 4xx dari penyedia (permintaan tidak valid) **tidak** diulang ke penyedia lain, dan kesalahan pemrograman tak terduga (mis. `TypeError`) juga tidak disamarkan dengan fallback. Keduanya dikembalikan sebagai galat terstruktur.
+   - Fallback ke Senopati AI ITS **hanya** dilakukan untuk kegagalan yang bersifat sementara: connection refused, connection timeout, HTTP 5xx, HTTP 404 (model/endpoint tidak ada di sisi penyedia), respons rusak, atau respons tanpa konten. Kegagalan tersebut ditandai `retryable` pada `LlmException`.
+   - HTTP 4xx lain dari penyedia (permintaan tidak valid) **tidak** diulang ke penyedia lain, dan kesalahan pemrograman tak terduga (mis. `TypeError`) juga tidak disamarkan dengan fallback. Keduanya dikembalikan sebagai galat terstruktur.
    - Setiap fallback dicatat melalui `Log::warning(...)`; kegagalan kedua penyedia dicatat melalui `Log::error(...)` beserta exception aslinya. Detail ini tidak pernah dikirim ke klien.
    - Untuk streaming, fallback hanya diizinkan **sebelum** potongan pertama dikirim ke klien. `LlmManager` menghitung chunk yang sudah dikirim dan menolak pergantian penyedia setelahnya sehingga tidak ada respons campuran.
    - Kolom `provider` dan `model_used` pada tabel `chat_logs` mencatat penyedia aktual yang berhasil melayani permintaan tersebut.
@@ -423,13 +430,36 @@ Seluruh perilaku di atas diuji tanpa ketergantungan pada Ollama/Senopati sungguh
 ```bash
 php artisan test --compact tests/Feature/ChatAiApiTest.php
 php artisan test --compact tests/Feature/ChatAiApiHardeningTest.php
+php artisan test --compact tests/Feature/AgenticChatWorkspaceTest.php
 php artisan test --compact tests/Feature/LlmServiceTest.php
 php artisan test --compact tests/Feature/ChatLogModelTest.php
 ```
 
+`AgenticChatWorkspaceTest` mencakup akses halaman, isolasi kepemilikan sesi, pemilihan sesi dan obrolan baru, endpoint streaming browser (sukses, gagal, sesi milik pengguna lain, tamu), serta tidak adanya duplikasi baris database.
+
 `ChatAiApiHardeningTest` mencakup token tidak valid/dicabut, validasi prompt (kosong, bukan string, 1000 karakter), kegagalan penyedia tanpa baris database, 4xx tanpa fallback, timeout/connection refused dengan fallback, metadata token `NULL`, error SSE yang tidak membocorkan detail internal, larangan pencampuran penyedia setelah output pertama, serta isolasi riwayat obrolan antarpengguna.
 
-### 7. Pemetaan Terhadap Rubrik Penilaian
+### 7. Antarmuka Web: Agentic Chat Workspace
+
+Selain API, modul ini memiliki antarmuka obrolan di dalam aplikasi Roku:
+
+| Aspek | Implementasi |
+| :--- | :--- |
+| Halaman | `GET /agentic-chat` (middleware `auth`), komponen Livewire `App\Livewire\AgenticChatWorkspace` |
+| Navigasi | Tautan **Agentic Chat** pada `layouts.app` mengarah ke workspace; `/agentic-chat/sessions` dialihkan (302) ke workspace |
+| Sidebar | Daftar maksimal 50 sesi milik pengguna, waktu aktivitas terakhir, jumlah pesan, tombol **Obrolan baru**, dan penanda `aria-current` untuk sesi aktif |
+| Area obrolan | Bubble pengguna/asisten, multiline textarea, Enter = kirim, Shift+Enter = baris baru, auto-scroll, indikator mengetik, dan status `aria-live` |
+| Metadata | Model, provider aktual (ollama/senopati), serta prompt/completion/total token dibaca dari `chat_logs` terakhir dan diperbarui langsung dari event metadata SSE |
+| Transport | `POST /agentic-chat/stream` di grup middleware `web` (sesi login + CSRF), memakai ulang `ChatAiController@stream` |
+| Error state | Pesan generik dari server ditampilkan di panel error dengan tombol **Ulangi** |
+
+**Arsitektur integrasi.** Tidak ada logika LLM yang diduplikasi. `App\Services\Chat\ChatConversationService` menjadi satu-satunya sumber untuk injeksi system prompt, penyusunan konteks, pembuatan sesi, dan penulisan transaksi (`chat_messages` + `chat_logs`). API controller (`POST /api/chat-ai`, `POST /api/chat-ai/stream`) dan transport browser memakai service yang sama.
+
+**Streaming di browser.** `resources/js/agentic-chat.js` meng-`fetch` endpoint SSE dengan `Accept: text/event-stream` dan header `X-CSRF-TOKEN`, lalu membaca body lewat `ReadableStream` sehingga setiap chunk langsung dirender. Kontrak yang dipatuhi sama dengan API: event `{"chunk": "..."}`, event metadata berstatus `[DONE]`, baris penutup `data: [DONE]`, dan `event: error` untuk kegagalan. Bila penyedia gagal setelah output pertama, server mengirim error dan jawaban tidak pernah dicampur antar penyedia. Setelah `[DONE]`, browser memanggil aksi Livewire `conversationCompleted(sessionId)` sehingga pesan yang tampil diambil ulang dari database — tidak ada baris ganda dan tidak ada duplikasi bubble.
+
+**Keamanan.** Browser tidak pernah menyimpan token Sanctum: autentikasi memakai sesi Laravel + CSRF. Setiap aksi Livewire dan setiap permintaan stream memvalidasi kepemilikan sesi melalui `whereBelongsTo($user)`; `session_id` milik pengguna lain menghasilkan 404 (halaman) atau 422 (stream). API key Senopati tetap hanya di server (`config/llm.php`).
+
+### 8. Pemetaan Terhadap Rubrik Penilaian
 
 | Komponen Penilaian | Bobot | Implementasi Teknis pada Repositori |
 | :--- | :---: | :--- |
