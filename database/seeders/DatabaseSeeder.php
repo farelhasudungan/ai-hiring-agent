@@ -35,8 +35,27 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $job = JobPosting::factory()->for($company)->create([
-            'title' => 'Senior Laravel Developer',
+            'title' => 'Pengembang Laravel Senior',
+            'department' => 'Rekayasa Perangkat Lunak',
+            'location' => 'Jakarta',
             'status' => 'open',
+            'description' => 'Kami mencari Pengembang Laravel Senior untuk merancang, membangun, dan memelihara aplikasi web yang andal dan mudah dikembangkan. Anda akan bekerja sama dengan tim produk dan desain, melakukan tinjauan kode, serta membimbing pengembang yang lebih junior.',
+            'requirements' => 'Berpengalaman minimal 5 tahun mengembangkan aplikasi dengan PHP dan Laravel. Memahami perancangan basis data relasional, pengujian otomatis, dan pembuatan REST API. Mampu berkomunikasi dengan baik dalam tim dan bekerja secara mandiri.',
+            'required_skills' => ['PHP', 'Laravel', 'MySQL', 'REST API', 'Git'],
+            'nice_to_have' => ['Docker', 'AWS', 'Redis'],
+            'min_experience_years' => 5,
+        ]);
+
+        JobPosting::factory()->for($company)->create([
+            'title' => 'Desainer UI/UX',
+            'department' => 'Desain Produk',
+            'location' => 'Bandung (Hibrida)',
+            'status' => 'open',
+            'description' => 'Kami membutuhkan Desainer UI/UX yang bertanggung jawab merancang pengalaman pengguna pada platform rekrutmen kami, mulai dari riset pengguna, wireframe, hingga prototipe interaktif yang siap diserahkan kepada tim pengembang.',
+            'requirements' => 'Berpengalaman minimal 2 tahun sebagai desainer produk digital. Mahir menggunakan Figma dan memahami prinsip aksesibilitas serta sistem desain. Memiliki portofolio yang menunjukkan proses berpikir desain.',
+            'required_skills' => ['Figma', 'Riset Pengguna', 'Wireframing', 'Prototyping', 'Sistem Desain'],
+            'nice_to_have' => ['HTML', 'CSS', 'Tailwind CSS'],
+            'min_experience_years' => 2,
         ]);
 
         $application = Application::factory()->for($company)->create([

@@ -41,29 +41,98 @@ document.querySelectorAll('[data-chat-example]').forEach((button) => {
 });
 
 /**
- * Appends text with **bold** parts. Built with DOM nodes only, never innerHTML,
- * so AI output can not inject markup.
+ * Appends inline markdown (**bold**, *italic*, `code`, <br>). Built with DOM
+ * nodes only, never innerHTML, so AI output can not inject markup.
  */
 const appendInline = (parent, text) => {
-    text.split(/(\*\*[^*]+\*\*)/g).forEach((part) => {
-        if (/^\*\*[^*]+\*\*$/.test(part)) {
-            parent.append(element('strong', 'font-semibold', part.slice(2, -2)));
-        } else if (part !== '') {
-            parent.append(document.createTextNode(part));
+    text.split(/<br\s*\/?>/i).forEach((segment, index) => {
+        if (index > 0) {
+            parent.append(document.createElement('br'));
         }
+
+        segment.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*)/g).forEach((part) => {
+            if (/^\*\*[^*]+\*\*$/.test(part)) {
+                parent.append(element('strong', 'font-semibold', part.slice(2, -2)));
+            } else if (/^`[^`]+`$/.test(part)) {
+                parent.append(element('code', 'rounded bg-zinc-100 px-1.5 py-0.5 text-sm', part.slice(1, -1)));
+            } else if (/^\*[^*\s][^*]*\*$/.test(part)) {
+                parent.append(element('em', 'italic', part.slice(1, -1)));
+            } else if (part !== '') {
+                parent.append(document.createTextNode(part));
+            }
+        });
     });
 };
 
+const tableCells = (line) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim());
+
+const isTableSeparator = (line) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line ?? '') && (line ?? '').includes('-');
+
+const isTableRow = (line) => /^\s*\|.*\|?\s*$/.test(line ?? '') && (line ?? '').includes('|');
+
+const buildTable = (header, rows) => {
+    const wrapper = element('div', 'overflow-x-auto rounded-xl border border-line');
+    const table = element('table', 'w-full border-collapse text-left text-sm');
+    const head = element('tr', 'bg-canvas');
+
+    header.forEach((cell) => {
+        const th = element('th', 'px-3 py-2 font-medium whitespace-nowrap');
+        appendInline(th, cell);
+        head.append(th);
+    });
+
+    table.append(element('thead', '')).firstChild.append(head);
+
+    const body = element('tbody', '');
+
+    rows.forEach((cells) => {
+        const tr = element('tr', 'border-t border-line align-top');
+
+        header.forEach((_, index) => {
+            const td = element('td', 'px-3 py-2');
+            appendInline(td, cells[index] ?? '');
+            tr.append(td);
+        });
+
+        body.append(tr);
+    });
+
+    table.append(body);
+    wrapper.append(table);
+
+    return wrapper;
+};
+
 /**
- * Minimal markdown: paragraphs, "-"/"*" bullets, "1." numbered items, **bold**.
+ * Minimal markdown: headings, paragraphs, bullets, numbered items, tables,
+ * horizontal rules and inline formatting.
  */
 const renderMarkdown = (target, source) => {
     target.replaceChildren();
 
+    const lines = source.split('\n');
     let list = null;
 
-    source.split('\n').forEach((line) => {
-        const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+
+        if (isTableRow(line) && isTableSeparator(lines[index + 1])) {
+            const rows = [];
+            let cursor = index + 2;
+
+            while (cursor < lines.length && isTableRow(lines[cursor])) {
+                rows.push(tableCells(lines[cursor]));
+                cursor++;
+            }
+
+            list = null;
+            target.append(buildTable(tableCells(line), rows));
+            index = cursor - 1;
+
+            continue;
+        }
+
+        const bullet = /^\s*[-*•]\s+(.*)$/.exec(line);
         const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
         const item = bullet ?? numbered;
 
@@ -79,17 +148,23 @@ const renderMarkdown = (target, source) => {
             appendInline(li, item[1]);
             list.append(li);
 
-            return;
+            continue;
         }
 
         list = null;
 
-        if (line.trim() !== '') {
+        if (/^\s*([-*_])\1{2,}\s*$/.test(line)) {
+            target.append(element('hr', 'border-line'));
+        } else if (/^#{1,6}\s+/.test(line)) {
+            const heading = element('p', 'pt-1 text-lg font-semibold');
+            appendInline(heading, line.replace(/^#{1,6}\s+/, ''));
+            target.append(heading);
+        } else if (line.trim() !== '') {
             const paragraph = element('p', '');
-            appendInline(paragraph, line.replace(/^#{1,6}\s+/, ''));
+            appendInline(paragraph, line);
             target.append(paragraph);
         }
-    });
+    }
 };
 
 /**
