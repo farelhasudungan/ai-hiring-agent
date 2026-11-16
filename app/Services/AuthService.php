@@ -11,9 +11,7 @@ use Illuminate\Support\Str;
 
 class AuthService
 {
-    public function __construct(private AuthRepository $repository)
-    {
-    }
+    public function __construct(private AuthRepository $repository) {}
 
     public function register(string $name, string $email, string $password): User
     {
@@ -37,7 +35,7 @@ class AuthService
 
             $company = $this->repository->createCompany([
                 'name' => $name,
-                'slug' => (Str::substr(Str::slug($name), 0, 200) ?: 'company') . '-' . Str::uuid(),
+                'slug' => (Str::substr(Str::slug($name), 0, 200) ?: 'company').'-'.Str::uuid(),
                 'plan' => 'free',
             ]);
 
