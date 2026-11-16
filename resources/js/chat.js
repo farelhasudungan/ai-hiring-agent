@@ -11,7 +11,9 @@ const element = (tag, className, text) => {
 
 const growTextarea = (textarea) => {
     textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 192)}px`;
+    const height = Math.min(textarea.scrollHeight, 192);
+    textarea.style.height = `${height}px`;
+    textarea.style.overflowY = textarea.scrollHeight > 192 ? 'auto' : 'hidden';
 };
 
 /**
@@ -81,7 +83,9 @@ const buildTable = (header, rows) => {
         head.append(th);
     });
 
-    table.append(element('thead', '')).firstChild.append(head);
+    const thead = element('thead', '');
+    thead.append(head);
+    table.append(thead);
 
     const body = element('tbody', '');
 

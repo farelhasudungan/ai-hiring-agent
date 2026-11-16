@@ -1,6 +1,6 @@
 <x-dashboard-layout title="Find candidates" flush>
     <x-chat-tabs :conversations="$conversations">
-        <section class="flex min-w-0 flex-1 flex-col overflow-y-auto" aria-labelledby="chat-heading">
+        <section class="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto" aria-labelledby="chat-heading">
             <form action="{{ route('chat.store') }}" method="POST" class="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-4 py-10">
                 @csrf
 

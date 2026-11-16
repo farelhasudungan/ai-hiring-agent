@@ -1,6 +1,6 @@
 <x-dashboard-layout :title="$conversation->title" flush>
     <x-chat-tabs :conversations="$conversations" :current="$conversation">
-        <section class="flex min-w-0 flex-1 flex-col" aria-label="Conversation"
+        <section class="flex min-h-0 min-w-0 flex-1 flex-col" aria-label="Conversation"
             data-chat
             data-chat-url="{{ route('chat.messages.store', $conversation) }}"
             data-chat-token="{{ csrf_token() }}"
