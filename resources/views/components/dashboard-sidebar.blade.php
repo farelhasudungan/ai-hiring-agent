@@ -13,22 +13,9 @@
             <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
             Overview
         </a>
-        <a href="{{ $user->company_id ? route('dashboard').'#company' : route('companies.create') }}" @if (request()->routeIs('companies.*')) aria-current="page" @endif
-            @class(['flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium transition', 'bg-zinc-100 text-ink' => request()->routeIs('companies.*'), 'text-muted hover:bg-zinc-50 hover:text-ink' => ! request()->routeIs('companies.*')])>
-            <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 21v-4h6v4M9 7h1m4 0h1M9 11h1m4 0h1" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            {{ $user->company_id ? 'Company' : 'Company setup' }}
-        </a>
-        <a href="{{ route('dashboard') }}#account" class="flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium text-muted transition hover:bg-zinc-50 hover:text-ink">
-            <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2" stroke-linecap="round"/></svg>
-            Account overview
-        </a>
     </nav>
 
     <div class="mt-auto flex flex-col gap-6">
-        <div class="flex flex-col gap-3 rounded-xl border border-line p-5">
-            <p class="text-sm font-medium">Good teams start with people.</p>
-            <p class="text-xs leading-relaxed text-muted">Your space for more thoughtful hiring.</p>
-        </div>
         <div class="flex flex-col gap-4 border-t border-line/60 pt-6">
             <div class="flex min-w-0 items-center gap-3">
                 <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-canvas text-sm font-medium" aria-hidden="true">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
