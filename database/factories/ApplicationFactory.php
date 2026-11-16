@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Application;
-use App\Models\Candidate;
 use App\Models\Company;
 use App\Models\JobPosting;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,8 +21,12 @@ class ApplicationFactory extends Factory
     {
         return [
             'company_id' => Company::factory(),
-            'candidate_id' => Candidate::factory(),
             'job_id' => JobPosting::factory(),
+            'full_name' => fake()->name(),
+            'email' => fake()->safeEmail(),
+            'phone' => fake()->optional()->phoneNumber(),
+            'linkedin_url' => null,
+            'portfolio_url' => null,
             'source' => fake()->randomElement(['gmail', 'manual']),
             'status' => 'received',
             'latest_match_score' => null,

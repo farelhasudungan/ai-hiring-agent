@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Application;
-use App\Models\Candidate;
 use App\Models\JobPosting;
 use App\Models\User;
 use App\Services\JobPostingService;
@@ -89,7 +88,6 @@ test('the service refuses to delete a job posting that has applications', functi
     Application::factory()->create([
         'company_id' => $user->company_id,
         'job_id' => $jobPosting->id,
-        'candidate_id' => Candidate::factory()->create(['company_id' => $user->company_id])->id,
     ]);
 
     expect(fn () => app(JobPostingService::class)->delete($user, $jobPosting))

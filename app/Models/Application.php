@@ -11,8 +11,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'company_id',
-    'candidate_id',
     'job_id',
+    'full_name',
+    'email',
+    'phone',
+    'linkedin_url',
+    'portfolio_url',
     'source',
     'status',
     'latest_match_score',
@@ -52,14 +56,6 @@ class Application extends Model
     }
 
     /**
-     * @return BelongsTo<Candidate, $this>
-     */
-    public function candidate(): BelongsTo
-    {
-        return $this->belongsTo(Candidate::class);
-    }
-
-    /**
      * @return BelongsTo<JobPosting, $this>
      */
     public function job(): BelongsTo
@@ -89,14 +85,6 @@ class Application extends Model
     public function aiScreenings(): HasMany
     {
         return $this->hasMany(AiScreening::class);
-    }
-
-    /**
-     * @return HasMany<EmailMessage, $this>
-     */
-    public function emailMessages(): HasMany
-    {
-        return $this->hasMany(EmailMessage::class);
     }
 
     /**

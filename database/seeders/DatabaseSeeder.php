@@ -5,12 +5,12 @@ namespace Database\Seeders;
 use App\Models\AiScreening;
 use App\Models\Application;
 use App\Models\ApplicationDocument;
-use App\Models\Candidate;
 use App\Models\Company;
 use App\Models\JobPosting;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class DatabaseSeeder extends Seeder
 {
@@ -39,15 +39,10 @@ class DatabaseSeeder extends Seeder
             'status' => 'open',
         ]);
 
-        $candidate = Candidate::factory()->for($company)->create([
+        $application = Application::factory()->for($company)->create([
+            'job_id' => $job->id,
             'full_name' => 'Jane Candidate',
             'email' => 'jane@example.com',
-            'source' => 'manual',
-        ]);
-
-        $application = Application::factory()->for($company)->create([
-            'candidate_id' => $candidate->id,
-            'job_id' => $job->id,
             'source' => 'manual',
         ]);
 
@@ -57,7 +52,7 @@ class DatabaseSeeder extends Seeder
             'parsed_text' => 'Jane is a senior Laravel developer with five years of experience.',
         ]);
 
-        AiScreening::factory()->for($application)->create([
+        $screening = AiScreening::factory()->for($application)->create([
             'job_id' => $job->id,
             'document_id' => $document->id,
             'status' => 'success',
@@ -79,7 +74,6 @@ class DatabaseSeeder extends Seeder
             ],
             'match_score' => 87,
             'recommendation' => 'strong_match',
-            'summary' => 'Strong backend match with the required Laravel and database skills.',
             'candidate_skills' => ['PHP', 'Laravel', 'MySQL', 'Docker'],
             'matched_skills' => ['PHP', 'Laravel', 'MySQL'],
             'missing_skills' => ['AWS'],
@@ -89,5 +83,18 @@ class DatabaseSeeder extends Seeder
             'completed_at' => now(),
             'duration_ms' => 12_000,
         ]);
+
+        $screening->update(['summary_path' => $screening->summaryPathForStorage()]);
+
+        Storage::disk('local')->put($screening->summary_path, <<<'MARKDOWN'
+            ## Jane Candidate
+
+            **Match score:** 87 · **Recommendation:** strong match
+
+            Strong backend match with the required Laravel and database skills.
+
+            - **Matched:** PHP, Laravel, MySQL
+            - **Missing:** AWS
+            MARKDOWN);
     }
 }

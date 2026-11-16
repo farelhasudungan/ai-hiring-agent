@@ -138,8 +138,8 @@
                             @foreach ($recentApplications as $application)
                                 <tr>
                                     <td class="py-4 pr-6">
-                                        <p class="font-medium wrap-anywhere">{{ $application->candidate->full_name }}</p>
-                                        <p class="mt-1 text-xs text-muted wrap-anywhere">{{ $application->candidate->email }}</p>
+                                        <p class="font-medium wrap-anywhere">{{ $application->full_name ?? 'Unnamed candidate' }}</p>
+                                        <p class="mt-1 text-xs text-muted wrap-anywhere">{{ $application->email ?? '—' }}</p>
                                     </td>
                                     <td class="py-4 pr-6">
                                         <span class="rounded-full bg-canvas px-3 py-1 text-xs capitalize">{{ $application->status }}</span>

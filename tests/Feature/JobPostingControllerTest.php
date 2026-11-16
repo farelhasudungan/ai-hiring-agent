@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Application;
-use App\Models\Candidate;
 use App\Models\JobPosting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -220,7 +219,6 @@ test('job postings with applications cannot be deleted', function () {
     Application::factory()->create([
         'company_id' => $user->company_id,
         'job_id' => $jobPosting->id,
-        'candidate_id' => Candidate::factory()->create(['company_id' => $user->company_id])->id,
     ]);
 
     $this->actingAs($user)

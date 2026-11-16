@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'application_id',
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'parsed_response',
     'match_score',
     'recommendation',
-    'summary',
+    'summary_path',
     'candidate_skills',
     'matched_skills',
     'missing_skills',
@@ -81,5 +82,25 @@ class AiScreening extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(ApplicationDocument::class, 'document_id');
+    }
+
+    /**
+     * The path on the local disk where this screening's Markdown summary is stored.
+     */
+    public function summaryPathForStorage(): string
+    {
+        return "ai-screenings/{$this->application_id}/{$this->id}.md";
+    }
+
+    /**
+     * Read the Markdown summary from storage, if one has been saved.
+     */
+    public function summaryMarkdown(): ?string
+    {
+        if ($this->summary_path === null || ! Storage::disk('local')->exists($this->summary_path)) {
+            return null;
+        }
+
+        return Storage::disk('local')->get($this->summary_path);
     }
 }

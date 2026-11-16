@@ -31,7 +31,7 @@ class AiScreeningFactory extends Factory
             'parsed_response' => null,
             'match_score' => null,
             'recommendation' => null,
-            'summary' => null,
+            'summary_path' => null,
             'candidate_skills' => null,
             'matched_skills' => null,
             'missing_skills' => null,

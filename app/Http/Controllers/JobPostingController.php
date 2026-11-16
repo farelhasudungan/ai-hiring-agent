@@ -55,7 +55,6 @@ class JobPostingController extends Controller
         return view('job-postings.show', [
             'jobPosting' => $jobPosting,
             'recentApplications' => $jobPosting->applications()
-                ->with('candidate')
                 ->latest('submitted_at')
                 ->limit(5)
                 ->get(),

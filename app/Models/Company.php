@@ -31,14 +31,6 @@ class Company extends Model
     }
 
     /**
-     * @return HasMany<Candidate, $this>
-     */
-    public function candidates(): HasMany
-    {
-        return $this->hasMany(Candidate::class);
-    }
-
-    /**
      * @return HasMany<Application, $this>
      */
     public function applications(): HasMany

@@ -20,7 +20,6 @@ class ActivityLogFactory extends Factory
         return [
             'user_id' => null,
             'application_id' => null,
-            'candidate_id' => null,
             'action' => fake()->randomElement(['created', 'updated', 'ai_started', 'status_changed']),
             'description' => fake()->sentence(),
             'meta' => null,

@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'application_id',
-    'candidate_id',
     'action',
     'description',
     'meta',
@@ -53,13 +52,5 @@ class ActivityLog extends Model
     public function application(): BelongsTo
     {
         return $this->belongsTo(Application::class);
-    }
-
-    /**
-     * @return BelongsTo<Candidate, $this>
-     */
-    public function candidate(): BelongsTo
-    {
-        return $this->belongsTo(Candidate::class);
     }
 }
