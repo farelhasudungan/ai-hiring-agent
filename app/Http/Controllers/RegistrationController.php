@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterRequest;
-use App\Services\OnboardingService;
+use App\Services\AuthService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -16,10 +16,10 @@ class RegistrationController extends Controller
         return view('auth.register');
     }
 
-    public function store(RegisterRequest $request, OnboardingService $onboarding): RedirectResponse
+    public function store(RegisterRequest $request, AuthService $auth): RedirectResponse
     {
         $data = $request->validated();
-        $user = $onboarding->register($data['name'], $data['email'], $data['password']);
+        $user = $auth->register($data['name'], $data['email'], $data['password']);
 
         event(new Registered($user));
         Auth::login($user);

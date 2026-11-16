@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCompanyRequest;
 use App\Models\Company;
-use App\Services\OnboardingService;
+use App\Services\AuthService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -20,10 +20,10 @@ class CompanyController extends Controller
         return view('companies.create');
     }
 
-    public function store(StoreCompanyRequest $request, OnboardingService $onboarding): RedirectResponse
+    public function store(StoreCompanyRequest $request, AuthService $auth): RedirectResponse
     {
         try {
-            $onboarding->createCompany($request->user(), $request->validated('name'));
+            $auth->createCompany($request->user(), $request->validated('name'));
         } catch (DomainException $exception) {
             throw ValidationException::withMessages(['name' => $exception->getMessage()]);
         }

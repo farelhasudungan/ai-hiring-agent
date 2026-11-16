@@ -27,6 +27,11 @@ class JobPosting extends Model
     use HasFactory;
 
     /**
+     * @var list<string>
+     */
+    public const STATUSES = ['draft', 'open', 'closed'];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

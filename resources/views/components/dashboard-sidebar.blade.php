@@ -13,6 +13,13 @@
             <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
             Overview
         </a>
+        @if ($user->company_id)
+            <a href="{{ route('job-postings.index') }}" @if (request()->routeIs('job-postings.*')) aria-current="page" @endif
+                @class(['flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-medium transition', 'bg-zinc-100 text-ink' => request()->routeIs('job-postings.*'), 'text-muted hover:bg-zinc-50 hover:text-ink' => ! request()->routeIs('job-postings.*')])>
+                <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Job postings
+            </a>
+        @endif
     </nav>
 
     <div class="mt-auto flex flex-col gap-6">

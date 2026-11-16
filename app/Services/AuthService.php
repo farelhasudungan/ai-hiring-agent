@@ -4,14 +4,14 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\User;
-use App\Repositories\OnboardingRepository;
+use App\Repositories\AuthRepository;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class OnboardingService
+class AuthService
 {
-    public function __construct(private OnboardingRepository $repository)
+    public function __construct(private AuthRepository $repository)
     {
     }
 

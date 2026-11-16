@@ -5,7 +5,7 @@ namespace App\Repositories;
 use App\Models\Company;
 use App\Models\User;
 
-class OnboardingRepository
+class AuthRepository
 {
     /**
      * @param  array{name: string, email: string, password: string, company_id: null, role: string}  $attributes
