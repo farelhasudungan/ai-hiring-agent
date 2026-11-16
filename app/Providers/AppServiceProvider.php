@@ -6,6 +6,8 @@ use App\Models\CandidateScoringAgent;
 use App\Models\HiringRecommendationAgent;
 use App\Models\ResumeParserAgent;
 use App\Models\User;
+use App\Services\Llm\LlmClientInterface;
+use App\Services\Llm\LlmManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
@@ -17,7 +19,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(LlmManager::class);
+        $this->app->bind(LlmClientInterface::class, LlmManager::class);
     }
 
     /**
