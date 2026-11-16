@@ -98,7 +98,7 @@ test('chat-ai rejects a session id that does not exist', function () {
 test('a failed llm call does not create session, message, or log records', function () {
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('Ollama down', 503),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response('Senopati down', 503),
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response('Senopati down', 503),
     ]);
 
     $this->withHeader('Authorization', 'Bearer '.$this->token)
@@ -114,7 +114,7 @@ test('a failed llm call does not create session, message, or log records', funct
 test('an invalid provider response returns a structured error without persisting data', function () {
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('bukan json', 200),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response('bukan json', 200),
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response('bukan json', 200),
     ]);
 
     $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
@@ -135,7 +135,7 @@ test('a connection timeout on ollama triggers the senopati fallback', function (
 
     Http::fake([
         'http://localhost:11434/api/chat' => fn () => throw new ConnectionException('cURL error 28: Operation timed out after 3001 milliseconds'),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response([
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response([
             'model' => 'qwen3:14b',
             'choices' => [
                 ['message' => ['role' => 'assistant', 'content' => 'Jawaban fallback setelah timeout.']],
@@ -160,7 +160,7 @@ test('a connection timeout on ollama triggers the senopati fallback', function (
 test('a connection refused on ollama also triggers the senopati fallback', function () {
     Http::fake([
         'http://localhost:11434/api/chat' => fn () => throw new ConnectionException('cURL error 7: Failed to connect to localhost port 11434'),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response([
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response([
             'model' => 'qwen3:14b',
             'choices' => [
                 ['message' => ['role' => 'assistant', 'content' => 'Jawaban fallback setelah connection refused.']],
@@ -182,7 +182,7 @@ test('a connection refused on ollama also triggers the senopati fallback', funct
 test('an upstream 4xx from ollama is not retried on senopati', function () {
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response(['error' => 'bad request'], 400),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response([], 200),
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response([], 200),
     ]);
 
     $this->withHeader('Authorization', 'Bearer '.$this->token)
@@ -225,7 +225,7 @@ test('streaming failures return a safe sse error without internal details', func
 
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('Secret internal failure', 503),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response('Secret internal failure', 503),
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response('Secret internal failure', 503),
     ]);
 
     $response = $this->withHeader('Authorization', 'Bearer '.$this->token)

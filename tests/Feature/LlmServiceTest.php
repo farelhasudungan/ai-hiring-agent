@@ -5,6 +5,7 @@ use App\Services\Llm\LlmClientInterface;
 use App\Services\Llm\LlmManager;
 use App\Services\Llm\OllamaClient;
 use App\Services\Llm\SenopatiClient;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -40,7 +41,7 @@ test('ollama client parses response and tokens correctly', function () {
 
 test('senopati client parses openai format and usage correctly', function () {
     Http::fake([
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response([
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response([
             'id' => 'chatcmpl-123',
             'object' => 'chat.completion',
             'model' => 'qwen3:14b',
@@ -62,7 +63,7 @@ test('senopati client parses openai format and usage correctly', function () {
         ], 200),
     ]);
 
-    $client = new SenopatiClient('https://senopati.its.ac.id/v1', 'qwen3:14b', 'test-api-key');
+    $client = new SenopatiClient('https://senopati.its.ac.id/llm-gateway/v1', 'qwen3:14b', 'test-api-key');
     $result = $client->chat([
         ['role' => 'user', 'content' => 'Siapa kamu?'],
     ]);
@@ -82,7 +83,7 @@ test('llm manager automatically falls back to senopati when ollama fails', funct
 
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('Connection refused', 503),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response([
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response([
             'id' => 'chatcmpl-fallback',
             'model' => 'qwen3:14b',
             'choices' => [
@@ -118,7 +119,7 @@ test('llm manager throws exception when both providers fail', function () {
 
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('Ollama down', 503),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response('Senopati down', 503),
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response('Senopati down', 503),
     ]);
 
     $manager = app(LlmManager::class);
@@ -141,13 +142,13 @@ test('senopati streaming stops at the done marker and keeps usage metadata', fun
         ."data: {\"choices\":[{\"delta\":{\"content\":\"SETELAH DONE\"}}]}\n\n";
 
     Http::fake([
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response($payload, 200, [
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response($payload, 200, [
             'Content-Type' => 'text/event-stream',
         ]),
     ]);
 
     $chunks = [];
-    $client = new SenopatiClient('https://senopati.its.ac.id/v1', 'qwen3:14b', 'test-api-key');
+    $client = new SenopatiClient('https://senopati.its.ac.id/llm-gateway/v1', 'qwen3:14b', 'test-api-key');
     $result = $client->stream([
         ['role' => 'user', 'content' => 'Halo'],
     ], function (string $chunk) use (&$chunks): void {
@@ -160,6 +161,38 @@ test('senopati streaming stops at the done marker and keeps usage metadata', fun
         ->and($result['completion_tokens'])->toBe(6)
         ->and($result['total_tokens'])->toBe(11)
         ->and($result['provider'])->toBe('senopati');
+});
+
+test('senopati streaming requests usage metadata and keeps it from the final chunk', function () {
+    $payload = "data: {\"model\":\"qwen3:14b\",\"choices\":[{\"delta\":{\"content\":\"Halo\"}}]}
+
+"
+        ."data: {\"model\":\"qwen3:14b\",\"choices\":[{\"delta\":{}}],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":15,\"total_tokens\":27}}
+
+"
+        ."data: [DONE]
+
+";
+
+    Http::fake([
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => function (Request $request) use ($payload) {
+            expect($request->data()['stream_options'])->toBe(['include_usage' => true]);
+
+            return Http::response($payload, 200, ['Content-Type' => 'text/event-stream']);
+        },
+    ]);
+
+    $chunks = [];
+    $client = new SenopatiClient('https://senopati.its.ac.id/llm-gateway/v1', 'qwen3:14b', 'test-api-key');
+    $result = $client->stream([['role' => 'user', 'content' => 'Halo']], function (string $chunk) use (&$chunks): void {
+        $chunks[] = $chunk;
+    });
+
+    expect($chunks)->toBe(['Halo'])
+        ->and($result['content'])->toBe('Halo')
+        ->and($result['prompt_tokens'])->toBe(12)
+        ->and($result['completion_tokens'])->toBe(15)
+        ->and($result['total_tokens'])->toBe(27);
 });
 
 test('ollama client reports malformed responses as llm exceptions', function () {
@@ -269,6 +302,30 @@ test('llm manager never switches provider after ollama already emitted a chunk',
 
     expect($chunks)->toBe(['sebagian jawaban ollama'])
         ->and($fallback->streamUsed)->toBeFalse();
+});
+
+test('a missing ollama model falls back to senopati', function () {
+    Log::spy();
+
+    Http::fake([
+        'http://localhost:11434/api/chat' => Http::response(['error' => "model 'qwen3:14b' not found"], 404),
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response([
+            'model' => 'qwen3:14b',
+            'choices' => [
+                ['message' => ['role' => 'assistant', 'content' => 'Jawaban dari Senopati.']],
+            ],
+            'usage' => ['prompt_tokens' => 3, 'completion_tokens' => 4, 'total_tokens' => 7],
+        ], 200),
+    ]);
+
+    $result = app(LlmManager::class)->chat([
+        ['role' => 'user', 'content' => 'Halo'],
+    ]);
+
+    expect($result['provider'])->toBe('senopati')
+        ->and($result['content'])->toBe('Jawaban dari Senopati.');
+
+    Log::shouldHaveReceived('warning')->once();
 });
 
 test('llm manager does not hide unexpected programming errors behind a fallback', function () {

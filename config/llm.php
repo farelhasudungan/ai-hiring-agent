@@ -54,7 +54,7 @@ return [
         ],
 
         'senopati' => [
-            'base_url' => env('SENOPATI_BASE_URL', 'https://senopati.its.ac.id/v1'),
+            'base_url' => env('SENOPATI_BASE_URL', 'https://senopati.its.ac.id/llm-gateway/v1'),
             'api_key' => env('SENOPATI_API_KEY', ''),
             'model' => env('SENOPATI_MODEL', 'qwen3:14b'),
         ],

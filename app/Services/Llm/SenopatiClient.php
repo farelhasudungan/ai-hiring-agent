@@ -168,11 +168,19 @@ class SenopatiClient implements LlmClientInterface
                 $pending = $pending->withOptions(['stream' => true]);
             }
 
-            $response = $pending->post(rtrim($this->baseUrl, '/').'/chat/completions', [
+            $payload = [
                 'model' => $this->model,
                 'messages' => $messages,
                 'stream' => $stream,
-            ]);
+            ];
+
+            if ($stream) {
+                // Verified on the ITS LLM gateway: usage is only returned on streamed
+                // responses when the OpenAI-compatible stream_options flag is sent.
+                $payload['stream_options'] = ['include_usage' => true];
+            }
+
+            $response = $pending->post(rtrim($this->baseUrl, '/').'/chat/completions', $payload);
         } catch (ConnectionException $e) {
             throw new LlmException('Layanan Senopati AI ITS tidak dapat dihubungi.', 503, $e, 'senopati', true);
         } catch (Throwable $e) {
@@ -184,7 +192,15 @@ class SenopatiClient implements LlmClientInterface
         }
 
         if ($response->clientError()) {
-            throw new LlmException('Senopati AI ITS menolak permintaan yang dikirim.', 502, null, 'senopati', false);
+            throw new LlmException(
+                $response->status() === 404
+                    ? 'Endpoint Senopati AI ITS tidak ditemukan. Periksa SENOPATI_BASE_URL.'
+                    : 'Senopati AI ITS menolak permintaan yang dikirim.',
+                502,
+                null,
+                'senopati',
+                false
+            );
         }
 
         if (! $response->successful()) {

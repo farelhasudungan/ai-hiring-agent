@@ -278,7 +278,7 @@ test('chat-ai automatically falls back to senopati when ollama is unreachable', 
 
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('Service Unavailable', 503),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response([
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response([
             'id' => 'chatcmpl-fallback-test',
             'model' => 'qwen3:14b',
             'choices' => [
@@ -325,7 +325,7 @@ test('chat-ai returns 503 error when both ollama and senopati fail', function ()
 
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('Ollama down', 503),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response('Senopati down', 503),
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response('Senopati down', 503),
     ]);
 
     $response = $this->withHeader('Authorization', 'Bearer '.$this->token)
@@ -400,7 +400,7 @@ test('chat-ai stream automatically falls back to senopati when ollama fails', fu
 
     Http::fake([
         'http://localhost:11434/api/chat' => Http::response('Service Unavailable', 503),
-        'https://senopati.its.ac.id/v1/chat/completions' => Http::response($senopatiStreamPayload, 200, [
+        'https://senopati.its.ac.id/llm-gateway/v1/chat/completions' => Http::response($senopatiStreamPayload, 200, [
             'Content-Type' => 'text/event-stream',
         ]),
     ]);

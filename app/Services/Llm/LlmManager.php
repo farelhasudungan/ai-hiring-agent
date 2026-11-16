@@ -42,7 +42,7 @@ class LlmManager implements LlmClientInterface
                 connectTimeout: $connectTimeout,
             ),
             'senopati' => new SenopatiClient(
-                baseUrl: (string) ($this->config['providers']['senopati']['base_url'] ?? 'https://senopati.its.ac.id/v1'),
+                baseUrl: (string) ($this->config['providers']['senopati']['base_url'] ?? 'https://senopati.its.ac.id/llm-gateway/v1'),
                 model: (string) ($this->config['providers']['senopati']['model'] ?? 'qwen3:14b'),
                 apiKey: (string) ($this->config['providers']['senopati']['api_key'] ?? ''),
                 timeout: $timeout,

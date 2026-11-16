@@ -178,7 +178,19 @@ class OllamaClient implements LlmClientInterface
         }
 
         if ($response->clientError()) {
-            throw new LlmException('Ollama menolak permintaan yang dikirim.', 502, null, 'ollama', false);
+            // 404 means the model/endpoint is missing on the Ollama server: a provider-side
+            // configuration problem worth retrying on the fallback. Other 4xx are request errors.
+            $missingModel = $response->status() === 404;
+
+            throw new LlmException(
+                $missingModel
+                    ? 'Model Ollama yang dikonfigurasi tidak tersedia pada server lokal.'
+                    : 'Ollama menolak permintaan yang dikirim.',
+                502,
+                null,
+                'ollama',
+                $missingModel
+            );
         }
 
         if (! $response->successful()) {
