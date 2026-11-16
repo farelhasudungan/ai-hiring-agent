@@ -272,6 +272,14 @@
               "",
               "pm.test(\"Content-Type adalah text/event-stream\", function () {",
               "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/event-stream\");",
+              "});",
+              "",
+              "pm.test(\"Respons SSE mengandung event chunk\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"data: {\\\"chunk\\\":\");",
+              "});",
+              "",
+              "pm.test(\"Respons SSE diakhiri penanda [DONE]\", function () {",
+              "    pm.expect(pm.response.text()).to.include(\"[DONE]\");",
               "});"
             ],
             "type": "text/javascript"
@@ -315,12 +323,76 @@
             "stream"
           ]
         },
-        "description": "Menguji respons streaming SSE (Server-Sent Events) bertahap dengan penutup event [DONE]."
+        "description": "Menguji respons streaming SSE (Server-Sent Events) bertahap: event data chunk, event metadata berisi status [DONE], dan baris penutup data: [DONE]. Jika penyedia gagal setelah potongan pertama, server mengirim event error dengan pesan generik dan tidak melanjutkan dengan penyedia lain."
       },
       "response": []
     },
     {
-      "name": "6. Logout (Revoke Token)",
+      "name": "6. Riwayat Chat Pengguna (200 OK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code adalah 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var jsonData = pm.response.json();",
+              "pm.test(\"Riwayat hanya berisi data pengguna yang login\", function () {",
+              "    pm.expect(jsonData.status).to.eql(\"success\");",
+              "    pm.expect(jsonData.data).to.be.an(\"array\");",
+              "});",
+              "",
+              "pm.test(\"Setiap entri memakai kontrak baku\", function () {",
+              "    jsonData.data.forEach(function (item) {",
+              "        pm.expect(item).to.have.property(\"session_id\");",
+              "        pm.expect(item).to.have.property(\"model_used\");",
+              "        pm.expect(item).to.have.property(\"prompt\");",
+              "        pm.expect(item).to.have.property(\"ai_response\");",
+              "        pm.expect(item).to.have.property(\"timestamp\");",
+              "    });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/chat-ai/history",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat-ai",
+            "history"
+          ]
+        },
+        "description": "Mengambil maksimal 50 entri chat_logs terbaru milik pengguna yang login. Tambahkan query session_id untuk memfilter satu sesi. Session milik pengguna lain menghasilkan HTTP 422."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Logout (Revoke Token)",
       "event": [
         {
           "listen": "test",
@@ -367,7 +439,7 @@
             "logout"
           ]
         },
-        "description": "Mencabut token Sanctum yang sedang aktif."
+        "description": "Mencabut token Sanctum yang sedang aktif. Token yang sudah dicabut akan ditolak dengan HTTP 401 pada permintaan berikutnya."
       },
       "response": []
     }

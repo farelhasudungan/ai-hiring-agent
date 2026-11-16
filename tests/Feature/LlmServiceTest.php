@@ -133,3 +133,197 @@ test('llm client interface resolves to llm manager from service container', func
 
     expect($client)->toBeInstanceOf(LlmManager::class);
 });
+
+test('senopati streaming stops at the done marker and keeps usage metadata', function () {
+    $payload = "data: {\"model\":\"qwen3:14b\",\"choices\":[{\"delta\":{\"content\":\"Halo \"}}]}\n\n"
+        ."data: {\"choices\":[{\"delta\":{\"content\":\"dunia\"}}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":6}}\n\n"
+        ."data: [DONE]\n\n"
+        ."data: {\"choices\":[{\"delta\":{\"content\":\"SETELAH DONE\"}}]}\n\n";
+
+    Http::fake([
+        'https://senopati.its.ac.id/v1/chat/completions' => Http::response($payload, 200, [
+            'Content-Type' => 'text/event-stream',
+        ]),
+    ]);
+
+    $chunks = [];
+    $client = new SenopatiClient('https://senopati.its.ac.id/v1', 'qwen3:14b', 'test-api-key');
+    $result = $client->stream([
+        ['role' => 'user', 'content' => 'Halo'],
+    ], function (string $chunk) use (&$chunks): void {
+        $chunks[] = $chunk;
+    });
+
+    expect($chunks)->toBe(['Halo ', 'dunia'])
+        ->and($result['content'])->toBe('Halo dunia')
+        ->and($result['prompt_tokens'])->toBe(5)
+        ->and($result['completion_tokens'])->toBe(6)
+        ->and($result['total_tokens'])->toBe(11)
+        ->and($result['provider'])->toBe('senopati');
+});
+
+test('ollama client reports malformed responses as llm exceptions', function () {
+    Http::fake([
+        'http://localhost:11434/api/chat' => Http::response(['model' => 'qwen3:14b', 'done' => true], 200),
+    ]);
+
+    $client = new OllamaClient('http://localhost:11434', 'qwen3:14b');
+
+    expect(fn () => $client->chat([['role' => 'user', 'content' => 'Halo']]))
+        ->toThrow(LlmException::class, 'Respons Ollama tidak memuat konten jawaban.');
+});
+
+test('llm manager streams through senopati when ollama fails before the first chunk', function () {
+    $primary = new class () implements LlmClientInterface {
+        public function chat(array $messages): array
+        {
+            throw new LlmException('Layanan Ollama tidak dapat dihubungi.', 503, null, 'ollama', true);
+        }
+
+        public function stream(array $messages, Closure $onChunk): array
+        {
+            throw new LlmException('Layanan Ollama tidak dapat dihubungi.', 503, null, 'ollama', true);
+        }
+    };
+
+    $fallback = new class () implements LlmClientInterface {
+        public bool $streamUsed = false;
+
+        public function chat(array $messages): array
+        {
+            throw new LlmException('chat tidak dipakai pada test ini.');
+        }
+
+        public function stream(array $messages, Closure $onChunk): array
+        {
+            $this->streamUsed = true;
+            $onChunk('jawaban senopati');
+
+            return [
+                'content' => 'jawaban senopati',
+                'model' => 'qwen3:14b',
+                'provider' => 'senopati',
+                'prompt_tokens' => 1,
+                'completion_tokens' => 2,
+                'total_tokens' => 3,
+            ];
+        }
+    };
+
+    $chunks = [];
+    $result = llmManagerWithClients($primary, $fallback)->stream(
+        [['role' => 'user', 'content' => 'Halo']],
+        function (string $chunk) use (&$chunks): void {
+            $chunks[] = $chunk;
+        }
+    );
+
+    expect($fallback->streamUsed)->toBeTrue()
+        ->and($chunks)->toBe(['jawaban senopati'])
+        ->and($result['provider'])->toBe('senopati');
+});
+
+test('llm manager never switches provider after ollama already emitted a chunk', function () {
+    $primary = new class () implements LlmClientInterface {
+        public function chat(array $messages): array
+        {
+            throw new LlmException('chat tidak dipakai pada test ini.');
+        }
+
+        public function stream(array $messages, Closure $onChunk): array
+        {
+            $onChunk('sebagian jawaban ollama');
+
+            throw new LlmException('Layanan Ollama tidak dapat dihubungi.', 503, null, 'ollama', true);
+        }
+    };
+
+    $fallback = new class () implements LlmClientInterface {
+        public bool $streamUsed = false;
+
+        public function chat(array $messages): array
+        {
+            throw new LlmException('chat tidak dipakai pada test ini.');
+        }
+
+        public function stream(array $messages, Closure $onChunk): array
+        {
+            $this->streamUsed = true;
+            $onChunk('jawaban senopati');
+
+            return [];
+        }
+    };
+
+    $chunks = [];
+    $manager = llmManagerWithClients($primary, $fallback);
+
+    expect(function () use ($manager, &$chunks): void {
+        $manager->stream(
+            [['role' => 'user', 'content' => 'Halo']],
+            function (string $chunk) use (&$chunks): void {
+                $chunks[] = $chunk;
+            }
+        );
+    })->toThrow(LlmException::class, 'Respons streaming terputus sebelum selesai. Silakan ulangi permintaan.');
+
+    expect($chunks)->toBe(['sebagian jawaban ollama'])
+        ->and($fallback->streamUsed)->toBeFalse();
+});
+
+test('llm manager does not hide unexpected programming errors behind a fallback', function () {
+    $primary = new class () implements LlmClientInterface {
+        public function chat(array $messages): array
+        {
+            throw new TypeError('Unexpected internal type error');
+        }
+
+        public function stream(array $messages, Closure $onChunk): array
+        {
+            throw new TypeError('Unexpected internal type error');
+        }
+    };
+
+    $fallback = new class () implements LlmClientInterface {
+        public bool $chatUsed = false;
+
+        public function chat(array $messages): array
+        {
+            $this->chatUsed = true;
+
+            return [];
+        }
+
+        public function stream(array $messages, Closure $onChunk): array
+        {
+            return [];
+        }
+    };
+
+    $manager = llmManagerWithClients($primary, $fallback);
+
+    expect(fn () => $manager->chat([['role' => 'user', 'content' => 'Halo']]))
+        ->toThrow(LlmException::class, 'Terjadi kesalahan internal saat memproses permintaan LLM.');
+
+    expect($fallback->chatUsed)->toBeFalse();
+});
+
+/**
+ * Build a manager whose provider clients are stubbed instead of built from config.
+ */
+function llmManagerWithClients(LlmClientInterface $primary, LlmClientInterface $fallback): LlmManager
+{
+    return new class ($primary, $fallback) extends LlmManager {
+        public function __construct(
+            private readonly LlmClientInterface $primaryClient,
+            private readonly LlmClientInterface $fallbackClient
+        ) {
+            parent::__construct('ollama');
+        }
+
+        public function client(?string $provider = null): LlmClientInterface
+        {
+            return $provider === 'senopati' ? $this->fallbackClient : $this->primaryClient;
+        }
+    };
+}

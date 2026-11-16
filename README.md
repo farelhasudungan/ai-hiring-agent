@@ -252,6 +252,7 @@ Seluruh endpoint API berada di bawah prefiks `/api` dengan format data JSON.
 | `POST` | `/api/logout` | `auth:sanctum` | Tidak ada | Memerlukan Bearer Token yang sah. |
 | `POST` | `/api/chat-ai` | `auth:sanctum` (Throttle 20/menit) | `prompt` (string), `session_id` (opsional integer) | `prompt`: required, string, max 1000 karakter.<br>`session_id`: nullable, integer, harus terdaftar di `chat_sessions` milik pengguna yang login. |
 | `POST` | `/api/chat-ai/stream` | `auth:sanctum` (Throttle 20/menit) | `prompt` (string), `session_id` (opsional integer) | Sama dengan aturan pada `POST /api/chat-ai`. Header `Accept: text/event-stream`. |
+| `GET` | `/api/chat-ai/history` | `auth:sanctum` (Throttle 20/menit) | `session_id` (opsional, query string) | Hanya mengembalikan `chat_logs` milik pengguna yang login, maksimal 50 entri terbaru. `session_id` milik pengguna lain menghasilkan HTTP 422. |
 
 ---
 
@@ -329,6 +330,17 @@ Terjadi saat kedua penyedia LLM (Ollama dan Senopati) tidak dapat dihubungi atau
 }
 ```
 
+Pesan galat lain yang mungkin muncul:
+
+| Status | `message` | Penyebab |
+| :---: | :--- | :--- |
+| `502` | `Ollama menolak permintaan yang dikirim.` | Ollama membalas HTTP 4xx; permintaan **tidak** diulang ke Senopati. |
+| `502` | `Respons dari Ollama tidak dapat dibaca.` | Body respons bukan JSON yang valid. |
+| `502` | `Respons Ollama tidak memuat konten jawaban.` | JSON valid tetapi tidak berisi `message.content`. |
+| `500` | `Terjadi kesalahan sistem saat menghubungi layanan LLM.` | Kesalahan tak terduga (tidak memicu fallback dan tidak membocorkan detail internal). |
+
+Seluruh pesan di atas sudah dikurasi: API key, URL internal, stack trace, dan pesan exception mentah hanya dicatat pada log server (`storage/logs`).
+
 ---
 
 ### 4. Cara Uji Streaming SSE (`curl -N`)
@@ -359,14 +371,30 @@ data: {"chunk":"adalah "}
 data: {"chunk":"tiga pertanyaan wawancara: ..."}
 
 data: {"session_id":2,"model_used":"qwen3:14b","provider":"ollama","tokens":{"prompt":24,"completion":68,"total":92},"status":"[DONE]"}
+
+data: [DONE]
 ```
 
-Setelah stream selesai, sistem secara otomatis menyimpan akumulasi jawaban ke dalam tabel `chat_logs` dan `chat_messages` dalam satu transaksi database.
+**Kontrak SSE:**
+
+1. Setiap potongan jawaban dikirim sebagai event `data: {"chunk": "..."}` tanpa nama event.
+2. Event metadata terakhir berisi `session_id`, `model_used`, `provider`, `tokens`, dan `status: "[DONE]"`.
+3. Baris penutup `data: [DONE]` menandakan stream berakhir dan dapat digunakan klien sebagai sinyal terminasi.
+4. Jika penyedia gagal sebelum potongan pertama, sistem otomatis melakukan fallback ke Senopati AI ITS dan stream tetap berjalan normal.
+5. Jika penyedia gagal **setelah** potongan pertama terkirim, fallback dibatalkan agar jawaban dua penyedia tidak tercampur. Klien menerima event `error` berikut lalu stream ditutup **tanpa** `[DONE]`:
+
+```text
+event: error
+data: {"status":"error","message":"Respons streaming dari penyedia LLM terputus sebelum selesai. Silakan ulangi permintaan."}
+```
+
+6. Kegagalan yang terjadi sebelum ada output sama sekali mengirim pesan `Layanan streaming LLM tidak dapat dihubungi. Silakan coba lagi.`
+7. Pesan pada event `error` selalu bersifat generik; detail exception hanya masuk ke log server.
+8. `chat_messages` (user + assistant) dan `chat_logs` hanya ditulis bila stream selesai dengan sukses, di dalam satu transaksi database.
 
 ---
 
 ### 5. Penjelasan Injeksi System Prompt dan Fallback Otomatis
-
 1. **Injeksi System Prompt Sisi Server (Challenge 2)**:
    - Setiap panggilan ke LLM selalu menyisipkan system prompt rekrutmen dari `config('llm.system_prompt')` pada elemen pertama array pesan (`role: system`).
    - Pengguna hanya memiliki kontrol terhadap isi `prompt` (`role: user`), sehingga tidak dapat membajak atau menimpa kepribadian dan pedoman etika asisten rekrutmen.
@@ -374,20 +402,41 @@ Setelah stream selesai, sistem secara otomatis menyimpan akumulasi jawaban ke da
 
 2. **Mekanisme Fallback Otomatis (Challenge 3)**:
    - `LlmManager` mengeksekusi panggilan utama ke penyedia lokal (Ollama) dengan waktu tunggu koneksi singkat (3 detik).
-   - Jika Ollama mengalami mati daya, penolakan koneksi (connection refused), atau kode HTTP 5xx, `LlmManager` menangkap eksepsi tersebut dan mencatat peringatan melalui `Log::warning(...)`.
-   - Permintaan kemudian secara otomatis dialihkan ke penyedia cadangan (Senopati AI ITS) tanpa menimbulkan interupsi pada klien.
+   - Fallback ke Senopati AI ITS **hanya** dilakukan untuk kegagalan yang bersifat sementara: connection refused, connection timeout, HTTP 5xx, respons rusak, atau respons tanpa konten. Kegagalan tersebut ditandai `retryable` pada `LlmException`.
+   - HTTP 4xx dari penyedia (permintaan tidak valid) **tidak** diulang ke penyedia lain, dan kesalahan pemrograman tak terduga (mis. `TypeError`) juga tidak disamarkan dengan fallback. Keduanya dikembalikan sebagai galat terstruktur.
+   - Setiap fallback dicatat melalui `Log::warning(...)`; kegagalan kedua penyedia dicatat melalui `Log::error(...)` beserta exception aslinya. Detail ini tidak pernah dikirim ke klien.
+   - Untuk streaming, fallback hanya diizinkan **sebelum** potongan pertama dikirim ke klien. `LlmManager` menghitung chunk yang sudah dikirim dan menolak pergantian penyedia setelahnya sehingga tidak ada respons campuran.
    - Kolom `provider` dan `model_used` pada tabel `chat_logs` mencatat penyedia aktual yang berhasil melayani permintaan tersebut.
+
+3. **Penulisan Database Atomik**:
+   - Satu interaksi sukses menulis `chat_messages` (user dan assistant) serta `chat_logs` di dalam `DB::transaction(...)`. Jika salah satu gagal, seluruh penulisan dibatalkan sehingga tidak ada percakapan setengah jadi atau duplikat.
+   - Jika penyedia tidak mengirim metadata usage, kolom `prompt_tokens`, `completion_tokens`, dan `total_tokens` disimpan sebagai `NULL`. Bila metadata tersedia (Ollama `prompt_eval_count`/`eval_count`, Senopati `usage`), nilainya disimpan apa adanya.
+   - Panggilan LLM yang gagal tidak membuat baris apa pun pada `chat_sessions`, `chat_messages`, maupun `chat_logs`.
+   - `GET /api/chat-ai/history` selalu dibatasi `whereBelongsTo($user)` sehingga pengguna tidak dapat membaca riwayat pengguna lain.
 
 ---
 
-### 6. Pemetaan Terhadap Rubrik Penilaian
+### 6. Pengujian Otomatis
+
+Seluruh perilaku di atas diuji tanpa ketergantungan pada Ollama/Senopati sungguhan (menggunakan `Http::fake()` dan test double `LlmClientInterface`):
+
+```bash
+php artisan test --compact tests/Feature/ChatAiApiTest.php
+php artisan test --compact tests/Feature/ChatAiApiHardeningTest.php
+php artisan test --compact tests/Feature/LlmServiceTest.php
+php artisan test --compact tests/Feature/ChatLogModelTest.php
+```
+
+`ChatAiApiHardeningTest` mencakup token tidak valid/dicabut, validasi prompt (kosong, bukan string, 1000 karakter), kegagalan penyedia tanpa baris database, 4xx tanpa fallback, timeout/connection refused dengan fallback, metadata token `NULL`, error SSE yang tidak membocorkan detail internal, larangan pencampuran penyedia setelah output pertama, serta isolasi riwayat obrolan antarpengguna.
+
+### 7. Pemetaan Terhadap Rubrik Penilaian
 
 | Komponen Penilaian | Bobot | Implementasi Teknis pada Repositori |
 | :--- | :---: | :--- |
 | **Fungsionalitas dan Koneksi LLM** | 40% | Service layer modular (`LlmClientInterface`, `OllamaClient`, `SenopatiClient`, `LlmManager`), konfigurasi dinamis `config/llm.php`, binding pada ServiceProvider, dan error handling terstruktur tanpa kebocoran kunci API. |
 | **Autentikasi dan Validasi Sanctum** | 20% | Instalasi Laravel Sanctum, trait `HasApiTokens` pada model `User`, penanganan exception 401 JSON global, FormRequest `ChatAiRequest` berbahasa Indonesia, pembatasan kepemilikan sesi, dan rate limiting throttle. |
-| **Logging dan Riwayat Database** | 20% | Migrasi additive `chat_logs`, model `ChatLog`, factory, seeder, relasi Eloquent, scoping data pengguna, eager loading anti N+1, serta penulisan `chat_messages` dan `chat_logs` dalam satu DB transaction. |
+| **Logging dan Riwayat Database** | 20% | Migrasi additive `chat_logs`, model `ChatLog`, factory, seeder, relasi Eloquent, scoping data pengguna (`GET /api/chat-ai/history`), eager loading anti N+1, penulisan `chat_messages` dan `chat_logs` dalam satu DB transaction, serta penyimpanan token usage `NULL`-safe. |
 | **Standardisasi JSON via API Resource** | 10% | Transformasi melalui `ChatLogResource` dengan format timestamp `Y-m-d H:i:s` dan envelope konsisten berstatus `success` atau `error`. |
-| **Fitur Unggulan Challenge A+** | 10% | Implementasi lengkap ketiga challenge: (1) SSE Streaming `POST /api/chat-ai/stream` dengan penutup `[DONE]`, (2) Server-side System Prompt Injection HR Roku, dan (3) Automatic Fallback dari Ollama ke Senopati AI ITS. |
+| **Fitur Unggulan Challenge A+** | 10% | Implementasi lengkap ketiga challenge: (1) SSE Streaming `POST /api/chat-ai/stream` dengan event `[DONE]` dan larangan pencampuran penyedia setelah output pertama, (2) Server-side System Prompt Injection HR Roku, dan (3) Automatic Fallback dari Ollama ke Senopati AI ITS yang hanya aktif untuk kegagalan sementara. |
 | **Kerapian Kode dan Standar PSR-12** | 10% | Pemenuhan standar PSR-12 melalui Laravel Pint, penataan direktori modular (Controllers/Api, Requests, Resources, Services/Llm), type hints, return types, dan ketiadaan kode sampah / debug statemen. |
 

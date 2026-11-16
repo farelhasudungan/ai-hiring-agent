@@ -48,7 +48,7 @@ class LlmManager implements LlmClientInterface
                 timeout: $timeout,
                 connectTimeout: $connectTimeout,
             ),
-            default => throw new LlmException("Provider LLM [{$provider}] tidak didukung.", 500),
+            default => throw new LlmException("Provider LLM [{$provider}] tidak didukung.", 500, null, $provider, false),
         };
     }
 
@@ -69,38 +69,30 @@ class LlmManager implements LlmClientInterface
     {
         $primary = $this->defaultProvider;
 
-        if ($primary === 'ollama') {
-            try {
-                return $this->client('ollama')->chat($messages);
-            } catch (Throwable $e) {
-                Log::warning('Ollama provider mengalami kegagalan. Melakukan fallback otomatis ke Senopati AI ITS.', [
-                    'error' => $e->getMessage(),
-                ]);
-
-                try {
-                    return $this->client('senopati')->chat($messages);
-                } catch (Throwable $fallbackError) {
-                    throw new LlmException(
-                        'Layanan LLM utama (Ollama) dan fallback (Senopati) tidak dapat dihubungi.',
-                        503,
-                        $fallbackError
-                    );
-                }
-            }
+        if ($primary !== 'ollama') {
+            return $this->callWithoutFallback($primary, $messages);
         }
 
         try {
-            return $this->client($primary)->chat($messages);
+            return $this->client('ollama')->chat($messages);
         } catch (Throwable $e) {
-            if ($e instanceof LlmException) {
-                throw $e;
+            $failure = $this->normalize($e, 'ollama');
+            $this->rethrowUnlessRetryable($failure);
+            $this->logFallback('chat', $failure);
+
+            try {
+                return $this->client('senopati')->chat($messages);
+            } catch (Throwable $fallbackError) {
+                throw $this->bothProvidersFailed('chat', $failure, $this->normalize($fallbackError, 'senopati'));
             }
-            throw new LlmException('Gagal memproses permintaan chat LLM: '.$e->getMessage(), 503, $e);
         }
     }
 
     /**
      * Stream chat completion with automatic fallback support.
+     *
+     * Fallback is only attempted before the first chunk reaches the client, so a failed
+     * Ollama stream can never be continued with a Senopati answer in the same response.
      *
      * @param  array<int, array{role: string, content: string}>  $messages
      * @param  Closure(string $chunk): void  $onChunk
@@ -116,34 +108,129 @@ class LlmManager implements LlmClientInterface
     public function stream(array $messages, Closure $onChunk): array
     {
         $primary = $this->defaultProvider;
+        $emittedChunks = 0;
 
-        if ($primary === 'ollama') {
+        $guardedChunk = function (string $chunk) use ($onChunk, &$emittedChunks): void {
+            $emittedChunks++;
+            $onChunk($chunk);
+        };
+
+        if ($primary !== 'ollama') {
             try {
-                return $this->client('ollama')->stream($messages, $onChunk);
+                return $this->client($primary)->stream($messages, $guardedChunk);
             } catch (Throwable $e) {
-                Log::warning('Ollama streaming gagal. Melakukan fallback otomatis ke Senopati AI ITS.', [
-                    'error' => $e->getMessage(),
-                ]);
+                $failure = $this->normalize($e, $primary);
 
-                try {
-                    return $this->client('senopati')->stream($messages, $onChunk);
-                } catch (Throwable $fallbackError) {
-                    throw new LlmException(
-                        'Layanan streaming LLM utama (Ollama) dan fallback (Senopati) tidak dapat dihubungi.',
-                        503,
-                        $fallbackError
-                    );
+                if ($emittedChunks > 0) {
+                    throw $this->interruptedStream($failure, $emittedChunks);
                 }
+
+                throw $failure;
             }
         }
 
         try {
-            return $this->client($primary)->stream($messages, $onChunk);
+            return $this->client('ollama')->stream($messages, $guardedChunk);
         } catch (Throwable $e) {
-            if ($e instanceof LlmException) {
-                throw $e;
+            $failure = $this->normalize($e, 'ollama');
+
+            if ($emittedChunks > 0) {
+                throw $this->interruptedStream($failure, $emittedChunks);
             }
-            throw new LlmException('Gagal memproses streaming LLM: '.$e->getMessage(), 503, $e);
+
+            $this->rethrowUnlessRetryable($failure);
+            $this->logFallback('stream', $failure);
+
+            try {
+                return $this->client('senopati')->stream($messages, $guardedChunk);
+            } catch (Throwable $fallbackError) {
+                throw $this->bothProvidersFailed('stream', $failure, $this->normalize($fallbackError, 'senopati'));
+            }
         }
+    }
+
+    /**
+     * @param  array<int, array{role: string, content: string}>  $messages
+     * @return array{
+     *     content: string,
+     *     model: string,
+     *     provider: string,
+     *     prompt_tokens: ?int,
+     *     completion_tokens: ?int,
+     *     total_tokens: ?int
+     * }
+     */
+    protected function callWithoutFallback(string $provider, array $messages): array
+    {
+        try {
+            return $this->client($provider)->chat($messages);
+        } catch (Throwable $e) {
+            throw $this->normalize($e, $provider);
+        }
+    }
+
+    /**
+     * Wrap unexpected errors as non-retryable so a programming error never hides behind a fallback.
+     */
+    protected function normalize(Throwable $e, string $provider): LlmException
+    {
+        if ($e instanceof LlmException) {
+            return $e;
+        }
+
+        return new LlmException('Terjadi kesalahan internal saat memproses permintaan LLM.', 500, $e, $provider, false);
+    }
+
+    protected function rethrowUnlessRetryable(LlmException $failure): void
+    {
+        if (! $failure->shouldFallback()) {
+            throw $failure;
+        }
+    }
+
+    protected function interruptedStream(LlmException $failure, int $emittedChunks): LlmException
+    {
+        Log::error('Streaming provider utama gagal setelah sebagian jawaban terkirim. Fallback dibatalkan agar respons tidak tercampur.', [
+            'provider' => $failure->provider,
+            'chunks_emitted' => $emittedChunks,
+            'reason' => $failure->getMessage(),
+            'exception' => $failure->getPrevious(),
+        ]);
+
+        return new LlmException(
+            'Respons streaming terputus sebelum selesai. Silakan ulangi permintaan.',
+            502,
+            $failure,
+            $failure->provider,
+            false
+        );
+    }
+
+    protected function logFallback(string $operation, LlmException $failure): void
+    {
+        Log::warning('Provider LLM utama gagal. Fallback otomatis ke Senopati AI ITS.', [
+            'operation' => $operation,
+            'provider' => 'ollama',
+            'status' => $failure->getCode(),
+            'reason' => $failure->getMessage(),
+            'exception' => $failure->getPrevious(),
+        ]);
+    }
+
+    protected function bothProvidersFailed(string $operation, LlmException $primaryFailure, LlmException $fallbackFailure): LlmException
+    {
+        Log::error('Provider LLM utama dan fallback sama-sama gagal.', [
+            'operation' => $operation,
+            'primary_reason' => $primaryFailure->getMessage(),
+            'primary_exception' => $primaryFailure->getPrevious(),
+            'fallback_reason' => $fallbackFailure->getMessage(),
+            'fallback_exception' => $fallbackFailure->getPrevious(),
+        ]);
+
+        $message = $operation === 'stream'
+            ? 'Layanan streaming LLM utama (Ollama) dan fallback (Senopati) tidak dapat dihubungi.'
+            : 'Layanan LLM utama (Ollama) dan fallback (Senopati) tidak dapat dihubungi.';
+
+        return new LlmException($message, 503, $fallbackFailure);
     }
 }

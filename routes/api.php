@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Secure LLM Chat API Hub with rate limiting
     Route::middleware('throttle:20,1')->group(function () {
+        Route::get('/chat-ai/history', [ChatAiController::class, 'history'])->name('api.chat-ai.history');
         Route::post('/chat-ai', [ChatAiController::class, 'chat'])->name('api.chat-ai');
         Route::post('/chat-ai/stream', [ChatAiController::class, 'stream'])->name('api.chat-ai.stream');
     });
