@@ -25,6 +25,11 @@ class ChatSession extends Model
         return $this->hasMany(ChatMessage::class);
     }
 
+    public function chatLogs(): HasMany
+    {
+        return $this->hasMany(ChatLog::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {
